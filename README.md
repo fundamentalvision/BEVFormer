@@ -14,7 +14,7 @@ The official implementation of the paper "[BEVFormer: Learning Bird's-Eye-View R
 
 # News
 - [2022/6/13]: We release the first version of BEVFormer.
-- [2022/5/23]: Mainly based on BEVFormer, BEVFormer++ ranks 1st on [Waymo Open Datast 3D Camera-Only Detection Chaallenge](https://waymo.com/open/challenges/2022/3d-camera-only-detection/).
+- [2022/5/23]: Mainly based on BEVFormer, BEVFormer++ ranks 1st on [Waymo Open Datast 3D Camera-Only Detection Challenge](https://waymo.com/open/challenges/2022/3d-camera-only-detection/).
 - [2022/3/10]: BEVFormer achieve the SOTA on [nuScenes Detection Task](https://nuscenes.org/object-detection?externalData=all&mapData=all&modalities=Camera) with **56.9% NDS** (camera-only)!
 </br>
 
