@@ -48,12 +48,12 @@ pip install timm
 ```
 
 
-**g. clone BEVFormer.**
+**g. Clone BEVFormer.**
 ```
 git clone https://github.com/zhiqi-li/BEVFormer.git
 ```
 
-**h. prepared pretrained models.**
+**h. Prepare pretrained models.**
 ```shell
 cd bevformer
 mkdir ckpts
