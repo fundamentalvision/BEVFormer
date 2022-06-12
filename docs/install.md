@@ -58,7 +58,7 @@ git clone https://github.com/zhiqi-li/BEVFormer.git
 cd bevformer
 mkdir ckpts
 
-cd ckpts & wget https://github.com/zhiqi-li/storage/releases/download/untagged-3eae107e7cbb87316e1d/r101_dcn_fcos3d_pretrain.pth
+cd ckpts & wget https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth
 ```
 
 note: this pretrained model is same the model used in [detr3d](https://github.com/WangYueFt/detr3d)
