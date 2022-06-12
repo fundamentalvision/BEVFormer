@@ -11,7 +11,6 @@ https://user-images.githubusercontent.com/27915819/161392594-fc0082f7-5c37-4919-
 The official implementation of the paper "[BEVFormer: Learning Bird's-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers](https://arxiv.org/abs/2203.17270)".
 
 
-
 # News
 - [2022/6/13]: We release the first version of BEVFormer.
 - [2022/5/23]: Mainly based on BEVFormer, BEVFormer++ ranks 1st on [Waymo Open Datast 3D Camera-Only Detection Challenge](https://waymo.com/open/challenges/2022/3d-camera-only-detection/).
@@ -37,7 +36,7 @@ The proposed approach achieves the new state-of-the-art **56.9\%** in terms of N
 
 | Backbone | Method | Lr Schd | NDS| mAP | Config | Download |
 | :---: | :---: | :---: | :---: | :---:| :---: | :---: |
-| [R101-DCN](https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth)  | BEVFormer | 24ep | 51.7|41.6 |[config](projects/configs/bevformer/bevformer_base.py) | [model](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_r101_dcn_24ep.pth) |
+| [R101-DCN](https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth)  | BEVFormer | 24ep | 51.7|41.6 |[config](projects/configs/bevformer/bevformer_base.py) | [model](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_r101_dcn_24ep.pth)/[log](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_r101_dcn_24ep.log) |
 
 
 
