@@ -1,19 +1,19 @@
 <div align="center">   
-
-# BEVFormer
+  
+# BEVFormer: a Cutting-edge Baseline for Camera-based Detection
 </div>
 
 
 https://user-images.githubusercontent.com/27915819/161392594-fc0082f7-5c37-4919-830a-2dd423c1d025.mp4
 
+> **BEVFormer: Learning Bird's-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers**
+> - [Paper](http://arxiv.org/abs/2203.17270) | [Blog](https://www.zhihu.com/question/521842610/answer/2431585901) (in Chinese) | Presentation Slides at CVPR 2022 Workshop (soon) | Live-streaming video on BEV Perception (soon)
 
-
-The official implementation of the paper "[BEVFormer: Learning Bird's-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers](https://arxiv.org/abs/2203.17270)".
 
 
 # News
-- [2022/6/13]: We release the first version of BEVFormer.
-- [2022/5/23]: Mainly based on BEVFormer, BEVFormer++ ranks 1st on [Waymo Open Datast 3D Camera-Only Detection Challenge](https://waymo.com/open/challenges/2022/3d-camera-only-detection/).
+- [2022/6/13]: We release an initial version of BEVFormer. It achieves a baseline result of **51.7%** NDS on nuScenes.
+- [2022/5/23]: Built on top of BEVFormer, **BEVFormer++**, gathering up all best practices in recent SOTAs and our unique modification,  ranks **1st** on [Waymo Open Datast 3D Camera-Only Detection Challenge](https://waymo.com/open/challenges/2022/3d-camera-only-detection/). We will present BEVFormer++ on CVPR 2022 Autonomous Driving [Workshop](https://cvpr2022.wad.vision/).
 - [2022/3/10]: BEVFormer achieve the SOTA on [nuScenes Detection Task](https://nuscenes.org/object-detection?externalData=all&mapData=all&modalities=Camera) with **56.9% NDS** (camera-only)!
 </br>
 
