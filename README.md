@@ -41,7 +41,7 @@ The proposed approach achieves the new state-of-the-art **56.9\%** in terms of N
 
 
 
-## Catalog
+# Catalog
 
 - [ ] BEV Segmentation checkpoints
 - [ ] BEV Segmentation code
@@ -62,6 +62,13 @@ If this work is helpful for your research, please consider citing the following 
 }
 ```
 
+# Acknowledgement
+
+Many thanks to these excellent open source projects:
+- [detr3d](https://github.com/WangYueFt/detr3d) 
+- [mmdet3d](https://github.com/open-mmlab/mmdetection3d)
+
+
 ### &#8627; Stargazers
 [![Stargazers repo roster for @nastyox/Repo-Roster](https://reporoster.com/stars/zhiqi-li/BEVFormer)](https://github.com/zhiqi-li/BEVFormer/stargazers)
 
@@ -69,8 +76,3 @@ If this work is helpful for your research, please consider citing the following 
 [![Forkers repo roster for @nastyox/Repo-Roster](https://reporoster.com/forks/zhiqi-li/BEVFormer)](https://github.com/zhiqi-li/BEVFormer/network/members)
 
 
-### Acknowledgement
-
-Many thanks to these excellent open source projects:
-- [detr3d](https://github.com/WangYueFt/detr3d) 
-- [mmdet3d](https://github.com/open-mmlab/mmdetection3d)
