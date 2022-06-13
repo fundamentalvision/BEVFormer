@@ -61,4 +61,4 @@ mkdir ckpts
 cd ckpts & wget https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth
 ```
 
-note: this pretrained model is same the model used in [detr3d](https://github.com/WangYueFt/detr3d)
+note: this pretrained model is the same model used in [detr3d](https://github.com/WangYueFt/detr3d)
