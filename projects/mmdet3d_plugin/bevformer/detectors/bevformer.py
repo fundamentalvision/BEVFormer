@@ -163,7 +163,7 @@ class BEVFormer(MVXTwoStageDetector):
                 img_feats = self.extract_feat(img=img, img_metas=img_metas)
                 prev_bev = self.pts_bbox_head(
                     img_feats, img_metas, prev_bev, only_bev=True)
-                self.train()
+            self.train()
             return prev_bev
 
     @auto_fp16(apply_to=('img', 'prev_bev', 'points'))
