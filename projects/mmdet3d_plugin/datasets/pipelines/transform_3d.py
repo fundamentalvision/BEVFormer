@@ -282,3 +282,46 @@ class CustomCollect3D(object):
         """str: Return a string that describes the module."""
         return self.__class__.__name__ + \
             f'(keys={self.keys}, meta_keys={self.meta_keys})'
+
+
+
+@PIPELINES.register_module()
+class RandomScaleImageMultiViewImage(object):
+    """Random scale the image
+    Args:
+        scales
+    """
+
+    def __init__(self, scales=[]):
+        self.scales = scales
+        assert len(self.scales)==1
+
+    def __call__(self, results):
+        """Call function to pad images, masks, semantic segmentation maps.
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Updated result dict.
+        """
+        rand_ind = np.random.permutation(range(len(self.scales)))[0]
+        rand_scale = self.scales[rand_ind]
+
+        y_size = [int(img.shape[0] * rand_scale) for img in results['img']]
+        x_size = [int(img.shape[1] * rand_scale) for img in results['img']]
+        scale_factor = np.eye(4)
+        scale_factor[0, 0] *= rand_scale
+        scale_factor[1, 1] *= rand_scale
+        results['img'] = [mmcv.imresize(img, (x_size[idx], y_size[idx]), return_scale=False) for idx, img in
+                          enumerate(results['img'])]
+        lidar2img = [scale_factor @ l2i for l2i in results['lidar2img']]
+        results['lidar2img'] = lidar2img
+        results['img_shape'] = [img.shape for img in results['img']]
+        results['ori_shape'] = [img.shape for img in results['img']]
+
+        return results
+
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(size={self.scales}, '
+        return repr_str

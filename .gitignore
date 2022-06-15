@@ -11,8 +11,11 @@ __pycache__/
 build/
 ckpts/
 data/
+ckpts
+data
 test/
 val/
+work_dirs/
 develop-eggs/
 dist/
 downloads/

@@ -190,7 +190,7 @@ class BEVFormerEncoder(TransformerLayerSequence):
             ref_3d, self.pc_range, kwargs['img_metas'])
         
         # bug: this code should be 'shift_ref_2d = ref_2d.clone()', we keep this bug for reproducing our results in paper.
-        shift_ref_2d = ref_2d # .clone() 
+        shift_ref_2d = ref_2d #.clone() 
         shift_ref_2d[..., :] += shift
 
         # (num_query, bs, embed_dims) -> (bs, num_query, embed_dims)
