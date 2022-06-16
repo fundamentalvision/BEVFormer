@@ -4,6 +4,7 @@
 #  Modified by Zhiqi Li
 # ---------------------------------------------
 
+from tkinter.messagebox import NO
 import torch
 from mmcv.runner import force_fp32, auto_fp16
 from mmdet.models import DETECTORS
@@ -64,20 +65,21 @@ class BEVFormer(MVXTwoStageDetector):
             'prev_angle': 0,
         }
 
-    def extract_img_feat(self, img, img_metas):
+    def extract_img_feat(self, img, img_metas, len_queue=None):
         """Extract features of images."""
         B = img.size(0)
         if img is not None:
-            input_shape = img.shape[-2:]
-            # update real input shape of each single img
-            for img_meta in img_metas:
-                img_meta.update(input_shape=input_shape)
+            
+            # input_shape = img.shape[-2:]
+            # # update real input shape of each single img
+            # for img_meta in img_metas:
+            #     img_meta.update(input_shape=input_shape)
 
             if img.dim() == 5 and img.size(0) == 1:
                 img.squeeze_()
             elif img.dim() == 5 and img.size(0) > 1:
                 B, N, C, H, W = img.size()
-                img = img.view(B * N, C, H, W)
+                img = img.reshape(B * N, C, H, W)
             if self.use_grid_mask:
                 img = self.grid_mask(img)
 
@@ -92,14 +94,17 @@ class BEVFormer(MVXTwoStageDetector):
         img_feats_reshaped = []
         for img_feat in img_feats:
             BN, C, H, W = img_feat.size()
-            img_feats_reshaped.append(img_feat.view(B, int(BN / B), C, H, W))
+            if len_queue is not None:
+                img_feats_reshaped.append(img_feat.view(int(B/len_queue), len_queue, int(BN / B), C, H, W))
+            else:
+                img_feats_reshaped.append(img_feat.view(B, int(BN / B), C, H, W))
         return img_feats_reshaped
 
     @auto_fp16(apply_to=('img'))
-    def extract_feat(self, img, img_metas):
+    def extract_feat(self, img, img_metas=None, len_queue=None):
         """Extract features from images and points."""
 
-        img_feats = self.extract_img_feat(img, img_metas)
+        img_feats = self.extract_img_feat(img, img_metas, len_queue=len_queue)
 
         return img_feats
 
@@ -155,12 +160,14 @@ class BEVFormer(MVXTwoStageDetector):
         """
         self.eval()
         with torch.no_grad():
-            len_queue = imgs_queue.size(1)
             prev_bev = None
+            bs, len_queue, num_cams, C, H, W = imgs_queue.shape
+            imgs_queue = imgs_queue.reshape(bs*len_queue, num_cams, C, H, W)
+            img_feats_list = self.extract_feat(img=imgs_queue, len_queue=len_queue)
             for i in range(len_queue):
-                img = imgs_queue[:, i, ...]
                 img_metas = [each[i] for each in img_metas_list]
-                img_feats = self.extract_feat(img=img, img_metas=img_metas)
+                # img_feats = self.extract_feat(img=img, img_metas=img_metas)
+                img_feats = [each_scale[:, i] for each_scale in img_feats_list]
                 prev_bev = self.pts_bbox_head(
                     img_feats, img_metas, prev_bev, only_bev=True)
             self.train()
