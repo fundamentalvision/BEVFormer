@@ -18,9 +18,14 @@ Note: using 1 GPU to eval can obtain slightly higher performance because continu
 
 
 # Using FP16 to train the model.
-
-We provide another script to train BEVFormer with FP16.
+The above training script can not support FP16 training, 
+and we provide another script to train BEVFormer with FP16.
 
 ```
 ./tools/fp16/dist_train.sh ./projects/configs/bevformer_fp16/bevformer_tiny_fp16.py 8
 ```
+
+
+# Visualization 
+
+see [visual.py](../tools/analysis_tools/visual.py)
