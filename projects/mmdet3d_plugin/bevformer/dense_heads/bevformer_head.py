@@ -71,8 +71,8 @@ class BEVFormerHead(DETRHead):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.pc_range = self.bbox_coder.pc_range
-        self.real_h = self.pc_range[3] - self.pc_range[0]
-        self.real_w = self.pc_range[4] - self.pc_range[1]
+        self.real_w = self.pc_range[3] - self.pc_range[0]
+        self.real_h = self.pc_range[4] - self.pc_range[1]
         self.num_cls_fcs = num_cls_fcs - 1
         super(BEVFormerHead, self).__init__(
             *args, transformer=transformer, **kwargs)
