@@ -175,7 +175,7 @@ class BEVFormer(MVXTwoStageDetector):
             self.train()
             return prev_bev
 
-    @auto_fp16(apply_to=('img', 'prev_bev', 'points'))
+    @auto_fp16(apply_to=('img', 'points'))
     def forward_train(self,
                       points=None,
                       img_metas=None,

@@ -20,6 +20,7 @@ from .temporal_self_attention import TemporalSelfAttention
 from .spatial_cross_attention import MSDeformableAttention3D
 from .decoder import CustomMSDeformableAttention
 from projects.mmdet3d_plugin.models.utils.bricks import run_time
+from mmcv.runner import force_fp32, auto_fp16
 
 
 @TRANSFORMER.register_module()
@@ -99,6 +100,7 @@ class PerceptionTransformer(BaseModule):
         xavier_init(self.reference_points, distribution='uniform', bias=0.)
         xavier_init(self.can_bus_mlp, distribution='uniform', bias=0.)
 
+    @auto_fp16(apply_to=('mlvl_feats', 'bev_queries', 'prev_bev', 'bev_pos'))
     def get_bev_features(
             self,
             mlvl_feats,
@@ -197,6 +199,7 @@ class PerceptionTransformer(BaseModule):
 
         return bev_embed
 
+    @auto_fp16(apply_to=('mlvl_feats', 'bev_queries', 'object_query_embed', 'prev_bev', 'bev_pos'))
     def forward(self,
                 mlvl_feats,
                 bev_queries,

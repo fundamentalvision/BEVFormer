@@ -31,6 +31,7 @@ def custom_train_detector(model,
                    distributed=False,
                    validate=False,
                    timestamp=None,
+                   eval_model=None,
                    meta=None):
     logger = get_root_logger(cfg.log_level)
 
@@ -76,10 +77,19 @@ def custom_train_detector(model,
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
-
+        if eval_model is not None:
+            eval_model = MMDistributedDataParallel(
+                eval_model.cuda(),
+                device_ids=[torch.cuda.current_device()],
+                broadcast_buffers=False,
+                find_unused_parameters=find_unused_parameters)
     else:
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+        if eval_model is not None:
+            eval_model = MMDataParallel(
+                eval_model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -95,15 +105,25 @@ def custom_train_detector(model,
     else:
         if 'total_epochs' in cfg:
             assert cfg.total_epochs == cfg.runner.max_epochs
-
-    runner = build_runner(
-        cfg.runner,
-        default_args=dict(
-            model=model,
-            optimizer=optimizer,
-            work_dir=cfg.work_dir,
-            logger=logger,
-            meta=meta))
+    if eval_model is not None:
+        runner = build_runner(
+            cfg.runner,
+            default_args=dict(
+                model=model,
+                eval_model=eval_model,
+                optimizer=optimizer,
+                work_dir=cfg.work_dir,
+                logger=logger,
+                meta=meta))
+    else:
+        runner = build_runner(
+            cfg.runner,
+            default_args=dict(
+                model=model,
+                optimizer=optimizer,
+                work_dir=cfg.work_dir,
+                logger=logger,
+                meta=meta))
 
     # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp

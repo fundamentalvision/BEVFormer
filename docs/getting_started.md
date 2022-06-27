@@ -16,3 +16,11 @@ Eval BEVFormer with 8 GPUs
 Note: using 1 GPU to eval can obtain slightly higher performance because continuous video may be truncated with multiple GPUs. By default we report the score evaled with 8 GPUs.
 
 
+
+# Using FP16 to train the model.
+
+We provide another script to train BEVFormer with FP16.
+
+```
+./tools/fp16/dist_train.sh ./projects/configs/bevformer_fp16/bevformer_tiny_fp16.py 8
+```
