@@ -1,27 +1,28 @@
 import numpy as np
 from os import path as osp
+from pathlib import Path
 
+from scipy.spatial.transform import Rotation as R
 import pickle
 from mmdet3d.core import show_result
 from mmdet3d.core.bbox import DepthInstance3DBoxes
-from mmdet3d.datasets.custom_3d import Custom3DDataset
 from mmdet.datasets import DATASETS
 from mmdet3d.core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
+from projects.mmdet3d_plugin.utils import Transform
+
+from .nuscenes_dataset import CustomNuScenesDataset
+
+
+IMG_ROOT = Path('./data/wayve')
 
 
 @DATASETS.register_module()
-class WayveDataset(Custom3DDataset):
+class WayveDataset(CustomNuScenesDataset):
     CLASSES = (
         'car', 'bus', 'van', 'truck', 'bicycle', 'motorcycle', 'scooter',
         'cyclist', 'motorcyclist', 'scooterist', 'pedestrian', 'traffic_light',
         'unknown',
     )
-    def __init__(self, queue_length=4, bev_size=(200, 200), overlap_test=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.queue_length = queue_length
-        self.overlap_test = overlap_test
-        self.bev_size = bev_size
-
     def load_annotations(self, ann_file):
         """Load annotations from ann_file.
 
@@ -31,8 +32,11 @@ class WayveDataset(Custom3DDataset):
         Returns:
             list[dict]: List of annotations.
         """
-        pass
-        #  with open(ann_file, 'rb') as f:
+        with open(ann_file, 'rb') as f:
+            data = pickle.load(f)
+        for d in data:
+            d['token'] = d['timestamp_us']
+        return data[:15*3]
             #  return pickle.load(f)
 
     def get_data_info(self, index):
@@ -55,33 +59,55 @@ class WayveDataset(Custom3DDataset):
                 - ann_info (dict): Annotation info.
         """
         info = self.data_infos[index]
-        # standard protocal modified from SECOND.Pytorch
+        can_bus = np.zeros(18)
         input_dict = dict(
-            sample_idx=info['sample_idx'],
-            pts_filename=info['pts_filename'],
-            sweeps=info['sweeps'],
+            sample_idx=info['seq_num'],
+            pts_filename='',
+            sweeps='',
+            ego2global_translation=info['ego2global_translation'],
+            ego2global_rotation=info['ego2global_rotation'],
+            prev_idx=info['prev_frame'],
+            next_idx=info['next_frame'],
+            scene_token=info['timestamp_us'],
+            can_bus=can_bus,
+            frame_idx=info['frame_id'],
             timestamp=info['timestamp_us'] / 1e6,
+            token=info['timestamp_us'],
+            #  timestamp=info['timestamp_us'] / 1e6,
         )
-        # For wayve dataset, the cuboids are labelled in the vehicle frame, so we don't need to use the lidar sensor's
-        # pose
-        # However, to make it work with the rest of the code, let's still call it 'lidar2cam'
+
+        # G_V_L is transform from lidar to ego vehicle
+        G_V_L = Transform.from_Rt(
+            R.from_quat(info['lidar2ego_rotation']),
+            np.array(info['lidar2ego_translation']),
+        )
+
         if self.modality['use_camera']:
             image_paths = []
             lidar2img_rts = []
             lidar2cam_rts = []
             cam_intrinsics = []
             for cam_type, cam_info in info['cameras'].items():
-                image_paths.append(cam_info['path'])
                 # obtain lidar to image transformation matrix
-                cam2ego = np.array(cam_info['pose'])
-                ego2cam = np.linalg.inv(cam2ego)
-                intrinsic = np.array(cam_info['intrinsics'])
-                viewpad = np.eye(4)
-                viewpad[:intrinsic.shape[0], :intrinsic.shape[1]] = intrinsic
-                lidar2img_rt = (viewpad @ ego2cam)
-                lidar2img_rts.append(lidar2img_rt)
-                cam_intrinsics.append(viewpad)
-                lidar2cam_rts.append(ego2cam)
+                G_V_C = Transform.from_Rt(
+                    R.from_quat(cam_info['cam2ego_rotation']),
+                    np.array(cam_info['cam2ego_translation']),
+                )
+
+                # This is lidar2cam
+                G_C_L = G_V_C.inverse @ G_V_L
+
+                K = np.array(cam_info['cam_intrinsic'])
+                G_im_C = np.eye(4)
+                G_im_C[:3, :3] = K
+
+                # Lidar to image
+                G_im_L = G_im_C @ G_C_L
+
+                image_paths.append(osp.join(self.data_root, cam_info['path']))
+                lidar2img_rts.append(G_im_L)
+                lidar2cam_rts.append(G_C_L)
+                cam_intrinsics.append(G_im_C)
 
             input_dict.update(
                 dict(
@@ -91,6 +117,7 @@ class WayveDataset(Custom3DDataset):
                     lidar2cam=lidar2cam_rts,
                 ))
 
+        #  import ipdb; ipdb.set_trace()
         if not self.test_mode:
             annos = self.get_ann_info(index)
             input_dict['ann_info'] = annos
@@ -138,30 +165,30 @@ class WayveDataset(Custom3DDataset):
         )
         return anns_results
 
-    def show(self, results, out_dir, show=True, pipeline=None):
-        """Results visualization.
+    #  def show(self, results, out_dir, show=True, pipeline=None):
+        #  """Results visualization.
 
-        Args:
-            results (list[dict]): List of bounding boxes results.
-            out_dir (str): Output directory of visualization result.
-            show (bool): Visualize the results online.
-            pipeline (list[dict], optional): raw data loading for showing.
-                Default: None.
-        """
-        assert out_dir is not None, 'Expect out_dir, got none.'
-        pipeline = self._get_pipeline(pipeline)
-        for i, result in enumerate(results):
-            if 'pts_bbox' in result.keys():
-                result = result['pts_bbox']
-            data_info = self.data_infos[i]
-            pts_path = data_info['lidar_path']
-            file_name = osp.split(pts_path)[-1].split('.')[0]
-            points = self._extract_data(i, pipeline, 'points').numpy()
-            # for now we convert points into depth mode
-            points = Coord3DMode.convert_point(points, Coord3DMode.LIDAR, Coord3DMode.DEPTH)
-            inds = result['scores_3d'] > 0.1
-            gt_bboxes = self.get_ann_info(i)['gt_bboxes_3d'].tensor.numpy()
-            show_gt_bboxes = Box3DMode.convert(gt_bboxes, Box3DMode.LIDAR, Box3DMode.DEPTH)
-            pred_bboxes = result['boxes_3d'][inds].tensor.numpy()
-            show_pred_bboxes = Box3DMode.convert(pred_bboxes, Box3DMode.LIDAR, Box3DMode.DEPTH)
-            show_result(points, show_gt_bboxes, show_pred_bboxes, out_dir, file_name, show)
+        #  Args:
+            #  results (list[dict]): List of bounding boxes results.
+            #  out_dir (str): Output directory of visualization result.
+            #  show (bool): Visualize the results online.
+            #  pipeline (list[dict], optional): raw data loading for showing.
+                #  Default: None.
+        #  """
+        #  assert out_dir is not None, 'Expect out_dir, got none.'
+        #  pipeline = self._get_pipeline(pipeline)
+        #  for i, result in enumerate(results):
+            #  if 'pts_bbox' in result.keys():
+                #  result = result['pts_bbox']
+            #  data_info = self.data_infos[i]
+            #  pts_path = data_info['lidar_path']
+            #  file_name = osp.split(pts_path)[-1].split('.')[0]
+            #  points = self._extract_data(i, pipeline, 'points').numpy()
+            #  # for now we convert points into depth mode
+            #  points = Coord3DMode.convert_point(points, Coord3DMode.LIDAR, Coord3DMode.DEPTH)
+            #  inds = result['scores_3d'] > 0.1
+            #  gt_bboxes = self.get_ann_info(i)['gt_bboxes_3d'].tensor.numpy()
+            #  show_gt_bboxes = Box3DMode.convert(gt_bboxes, Box3DMode.LIDAR, Box3DMode.DEPTH)
+            #  pred_bboxes = result['boxes_3d'][inds].tensor.numpy()
+            #  show_pred_bboxes = Box3DMode.convert(pred_bboxes, Box3DMode.LIDAR, Box3DMode.DEPTH)
+            #  show_result(points, show_gt_bboxes, show_pred_bboxes, out_dir, file_name, show)

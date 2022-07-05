@@ -89,7 +89,6 @@ def custom_multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             #    result = [(bbox_results, encode_mask_results(mask_results))
             #              for bbox_results, mask_results in result]
         if rank == 0:
-            
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
@@ -151,7 +150,7 @@ def collect_results_cpu(result_part, size, tmpdir=None):
         bacause we change the sample of the evaluation stage to make sure that each gpu will handle continuous sample,
         '''
         #for res in zip(*part_list):
-        for res in part_list:  
+        for res in part_list:
             ordered_results.extend(list(res))
         # the dataloader may pad some samples
         ordered_results = ordered_results[:size]
