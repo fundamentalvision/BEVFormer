@@ -171,11 +171,23 @@ class CustomNuScenesDataset(NuScenesDataset):
             annos = self.get_ann_info(index)
             input_dict['ann_info'] = annos
 
-        rotation = Quaternion(input_dict['ego2global_rotation'])
-        translation = input_dict['ego2global_translation']
+        # rotation = Quaternion(input_dict['ego2global_rotation'])
+        # translation = input_dict['ego2global_translation']
+
+        lidar2ego = np.eye(4)
+        lidar2ego[:3,:3] = Quaternion(input_dict['lidar2ego_rotation']).rotation_matrix
+        lidar2ego[:3, 3] = input_dict['lidar2ego_translation']
+        ego2global = np.eye(4)
+        ego2global[:3,:3] = Quaternion(input_dict['ego2global_rotation']).rotation_matrix
+        ego2global[:3, 3] = input_dict['ego2global_translation']
+        lidar2global = ego2global @ lidar2ego
+        lidar2global_translation = list(lidar2global[:3,3])
+        # lidar2global_rotation = list(Quaternion(matrix=lidar2global).q)
+        lidar2global_rotation = Quaternion(matrix=lidar2global)
+        # import pdb;pdb.set_trace()
         can_bus = input_dict['can_bus']
-        can_bus[:3] = translation
-        can_bus[3:7] = rotation
+        can_bus[:3] = lidar2global_translation
+        can_bus[3:7] = lidar2global_rotation
         patch_angle = quaternion_yaw(rotation) / np.pi * 180
         if patch_angle < 0:
             patch_angle += 360
