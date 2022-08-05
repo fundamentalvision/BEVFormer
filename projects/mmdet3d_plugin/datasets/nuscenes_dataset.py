@@ -128,6 +128,8 @@ class CustomNuScenesDataset(NuScenesDataset):
             sweeps=info['sweeps'],
             ego2global_translation=info['ego2global_translation'],
             ego2global_rotation=info['ego2global_rotation'],
+            lidar2ego_translation=info['lidar2ego_translation'],
+            lidar2ego_rotation=info['lidar2ego_rotation'],
             prev_idx=info['prev'],
             next_idx=info['next'],
             scene_token=info['scene_token'],
