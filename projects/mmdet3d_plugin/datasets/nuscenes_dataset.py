@@ -190,7 +190,7 @@ class CustomNuScenesDataset(NuScenesDataset):
         can_bus = input_dict['can_bus']
         can_bus[:3] = lidar2global_translation
         can_bus[3:7] = lidar2global_rotation
-        patch_angle = quaternion_yaw(rotation) / np.pi * 180
+        patch_angle = quaternion_yaw(lidar2global_rotation) / np.pi * 180
         if patch_angle < 0:
             patch_angle += 360
         can_bus[-2] = patch_angle / 180 * np.pi
