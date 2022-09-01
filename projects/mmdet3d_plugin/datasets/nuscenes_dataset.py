@@ -36,67 +36,49 @@ class CustomNuScenesDataset(NuScenesDataset):
         Returns:
             dict: Training data dict of the corresponding index.
         """
-        data_queue = []
-
-        # temporal aug
-        prev_indexs_list = list(range(index-self.queue_length, index))
-        random.shuffle(prev_indexs_list)
-        prev_indexs_list = sorted(prev_indexs_list[1:], reverse=True)
-        ##
-
-        input_dict = self.get_data_info(index)
-        if input_dict is None:
-            return None
-        frame_idx = input_dict['frame_idx']
-        scene_token = input_dict['scene_token']
-        self.pre_pipeline(input_dict)
-        example = self.pipeline(input_dict)
-        if self.filter_empty_gt and \
-                (example is None or ~(example['gt_labels_3d']._data != -1).any()):
-            return None
-        data_queue.insert(0, example)
-        for i in prev_indexs_list:
+        queue = []
+        index_list = list(range(index-self.queue_length, index))
+        random.shuffle(index_list)
+        index_list = sorted(index_list[1:])
+        index_list.append(index)
+        for i in index_list:
             i = max(0, i)
             input_dict = self.get_data_info(i)
             if input_dict is None:
                 return None
-            if input_dict['frame_idx'] < frame_idx and input_dict['scene_token'] == scene_token:
-                self.pre_pipeline(input_dict)
-                example = self.pipeline(input_dict)
-                if self.filter_empty_gt and \
-                        (example is None or ~(example['gt_labels_3d']._data != -1).any()):
-                    return None
-                frame_idx = input_dict['frame_idx']
-            data_queue.insert(0, copy.deepcopy(example))
-        return self.union2one(data_queue)
+            self.pre_pipeline(input_dict)
+            example = self.pipeline(input_dict)
+            if self.filter_empty_gt and \
+                    (example is None or ~(example['gt_labels_3d']._data != -1).any()):
+                return None
+            queue.append(example)
+        return self.union2one(queue)
+
 
     def union2one(self, queue):
-        """
-        convert sample queue into one single sample.
-        """
         imgs_list = [each['img'].data for each in queue]
         metas_map = {}
+        prev_scene_token = None
         prev_pos = None
         prev_angle = None
         for i, each in enumerate(queue):
             metas_map[i] = each['img_metas'].data
-            if i == 0:
-                metas_map[i]['prev_bev'] = False
+            if metas_map[i]['scene_token'] != prev_scene_token:
+                metas_map[i]['prev_bev_exists'] = False
+                prev_scene_token = metas_map[i]['scene_token']
                 prev_pos = copy.deepcopy(metas_map[i]['can_bus'][:3])
                 prev_angle = copy.deepcopy(metas_map[i]['can_bus'][-1])
                 metas_map[i]['can_bus'][:3] = 0
                 metas_map[i]['can_bus'][-1] = 0
             else:
-                metas_map[i]['prev_bev'] = True
+                metas_map[i]['prev_bev_exists'] = True
                 tmp_pos = copy.deepcopy(metas_map[i]['can_bus'][:3])
                 tmp_angle = copy.deepcopy(metas_map[i]['can_bus'][-1])
                 metas_map[i]['can_bus'][:3] -= prev_pos
                 metas_map[i]['can_bus'][-1] -= prev_angle
                 prev_pos = copy.deepcopy(tmp_pos)
                 prev_angle = copy.deepcopy(tmp_angle)
-
-        queue[-1]['img'] = DC(torch.stack(imgs_list),
-                              cpu_only=False, stack=True)
+        queue[-1]['img'] = DC(torch.stack(imgs_list), cpu_only=False, stack=True)
         queue[-1]['img_metas'] = DC(metas_map, cpu_only=True)
         queue = queue[-1]
         return queue

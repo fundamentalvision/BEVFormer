@@ -79,10 +79,11 @@ class EpochBasedRunner_video(EpochBasedRunner):
                 data_list.append(data)
             with torch.no_grad():
                 for i in range(num_samples-1):
-                    if i>0: data_list[i]['prev_bev'] = DataContainer(data=[prev_bev], cpu_only=False)
+                    if data_list[i]['img_metas'].data[0][0]['prev_bev_exists']:
+                        data_list[i]['prev_bev'] = DataContainer(data=[prev_bev], cpu_only=False)
                     prev_bev = self.eval_model.val_step(data_list[i], self.optimizer, **kwargs)
-            
-            data_list[-1]['prev_bev'] = DataContainer(data=[prev_bev], cpu_only=False)
+            if data_list[-1]['img_metas'].data[0][0]['prev_bev_exists']:
+                data_list[-1]['prev_bev'] = DataContainer(data=[prev_bev], cpu_only=False)
             outputs = self.model.train_step(data_list[-1], self.optimizer, **kwargs)
         else:
             assert False
