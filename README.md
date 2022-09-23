@@ -72,9 +72,8 @@ Many thanks to these excellent open source projects:
 
 
 ### &#8627; Stargazers
-[![Stargazers repo roster for @nastyox/Repo-Roster](https://reporoster.com/stars/zhiqi-li/BEVFormer)](https://github.com/zhiqi-li/BEVFormer/stargazers)
+[![Stargazers repo roster for @nastyox/Repo-Roster](https://reporoster.com/stars/fundamentalvision/BEVFormer)](https://github.com/fundamentalvision/BEVFormer/stargazers)
 
 ### &#8627; Forkers
-[![Forkers repo roster for @nastyox/Repo-Roster](https://reporoster.com/forks/zhiqi-li/BEVFormer)](https://github.com/zhiqi-li/BEVFormer/network/members)
-
+[![Forkers repo roster for @nastyox/Repo-Roster](https://reporoster.com/forks/fundamentalvision/BEVFormer)](https://github.com/fundamentalvision/BEVFormer/network/members)
 
