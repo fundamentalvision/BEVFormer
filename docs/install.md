@@ -50,7 +50,7 @@ pip install timm
 
 **g. Clone BEVFormer.**
 ```
-git clone https://github.com/zhiqi-li/BEVFormer.git
+git clone https://github.com/fundamentalvision/BEVFormer.git
 ```
 
 **h. Prepare pretrained models.**
