@@ -1,0 +1,23 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="10">
+            <item index="0" class="java.lang.String" itemvalue="panopticapi" />
+            <item index="1" class="java.lang.String" itemvalue="tensorboard" />
+            <item index="2" class="java.lang.String" itemvalue="torch" />
+            <item index="3" class="java.lang.String" itemvalue="torchvision" />
+            <item index="4" class="java.lang.String" itemvalue="opencv_python" />
+            <item index="5" class="java.lang.String" itemvalue="tqdm" />
+            <item index="6" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="7" class="java.lang.String" itemvalue="scikit-image" />
+            <item index="8" class="java.lang.String" itemvalue="filterpy" />
+            <item index="9" class="java.lang.String" itemvalue="lap" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
