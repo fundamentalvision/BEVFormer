@@ -8,14 +8,15 @@ from .mmdet_train import custom_train_detector
 from mmseg.apis import train_segmentor
 from mmdet.apis import train_detector
 
+
 def custom_train_model(model,
-                dataset,
-                cfg,
-                distributed=False,
-                validate=False,
-                timestamp=None,
-                eval_model=None,
-                meta=None):
+                       dataset,
+                       cfg,
+                       distributed=False,
+                       validate=False,
+                       timestamp=None,
+                       eval_model=None,
+                       meta=None):
     """A function wrapper for launching model training according to cfg.
 
     Because we need different eval_hook in runner. Should be deprecated in the
