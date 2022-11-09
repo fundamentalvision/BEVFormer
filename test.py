@@ -34,8 +34,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test (and eval) a model')
 
     parser.add_argument('--config', help='test config file path',
-                        default='../projects/configs/bevformer/bevformer_base.py')
-    parser.add_argument('--checkpoint', help='checkpoint file', default='../ckpts/r101_dcn_fcos3d_pretrain.pth')
+                        default='projects/configs/bevformer/bevformer_base.py')
+    parser.add_argument('--checkpoint', help='checkpoint file', default='ckpts/r101_dcn_fcos3d_pretrain.pth')
 
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
@@ -117,7 +117,7 @@ def parse_args():
 def main():
     args = parse_args()
     args.eval = True
-    args.out = '../ttt.pkl'
+    args.out = '/ttt.pkl'
     assert args.out or args.eval or args.format_only or args.show \
            or args.show_dir, \
         ('Please specify at least one operation (save/eval/format/show the '

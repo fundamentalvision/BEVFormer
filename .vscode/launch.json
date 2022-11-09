@@ -11,10 +11,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            // "cwd": "${workspaceRoot}",
-            "cwd": "/media/cuhp/SSD/Leadmove/BEV/BEVFormer",
-            "env": {"PYTHONPATH":"../"},
-            "envFile": "${workspaceRoot}/.env",
+            "cwd": "${workspaceRoot}",
+            // "cwd": "/media/cuhp/SSD/Leadmove/BEV/BEVFormer/",
+            // "env": {"PYTHONPATH":"../"},
+            // "envFile": "${workspaceRoot}/.env",
         }
     ]
 }
