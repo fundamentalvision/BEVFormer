@@ -2,6 +2,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # ---------------------------------------------
 #  Modified by Zhiqi Li
+"""
+add canbus in function nuscenes_data_prep(call function data_converter.nuscenes_converter)
+"""
 # ---------------------------------------------
 from data_converter.create_gt_database import create_groundtruth_database
 from data_converter import nuscenes_converter as nuscenes_converter

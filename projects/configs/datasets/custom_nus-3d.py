@@ -104,6 +104,7 @@ eval_pipeline = [
     dict(type='Collect3D', keys=['points'])
 ]
 
+# collect above variables,we only call this
 data = dict(
     samples_per_gpu=4,
     workers_per_gpu=4,
