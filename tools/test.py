@@ -4,12 +4,15 @@
 #  Modified by Zhiqi Li
 # ---------------------------------------------
 import sys
+import os
 sys.path.append('../projects')
-sys.path.append('../')
+print(os.path.abspath('../'))
+sys.path.append(os.path.abspath('../'))
+
 
 import argparse
 import mmcv
-import os
+
 import torch
 import warnings
 from mmcv import Config, DictAction

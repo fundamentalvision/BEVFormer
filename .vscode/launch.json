@@ -4,6 +4,7 @@
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Current File",
             "type": "python",
@@ -11,10 +12,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "cwd": "${workspaceRoot}",
-            // "cwd": "/media/cuhp/SSD/Leadmove/BEV/BEVFormer/",
-            // "env": {"PYTHONPATH":"../"},
-            // "envFile": "${workspaceRoot}/.env",
+            // "cwd": "${workspaceRoot}",
+            "cwd": "/media/cuhp/SSD/Leadmove/BEV/BEVFormer/",
+            "env": {"PYTHONPATH":"../"},
+            "envFile": "${workspaceRoot}/.env",
         }
     ]
 }
