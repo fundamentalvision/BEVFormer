@@ -469,7 +469,7 @@ def render_sample_data(
     plt.close()
 
 if __name__ == '__main__':
-    nusc = NuScenes(version='v1.0-trainval', dataroot='./data/nuscenes', verbose=True)
+    nusc = NuScenes(version='v1.0-mini', dataroot='/media/cuhp/SSD/Dataset/nuscenes', verbose=True)
     # render_annotation('7603b030b42a4b1caa8c443ccc1a7d52')
     bevformer_results = mmcv.load('test/bevformer_base/Thu_Jun__9_16_22_37_2022/pts_bbox/results_nusc.json')
     sample_token_list = list(bevformer_results['results'].keys())
