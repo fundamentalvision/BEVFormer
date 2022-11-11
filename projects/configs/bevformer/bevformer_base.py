@@ -26,7 +26,8 @@ input_modality = dict(
     use_map=False,
     use_external=True)
 
-_dim_ = 256
+# _dim_ = 256
+_dim_ = 16
 _pos_dim_ = _dim_//2
 _ffn_dim_ = _dim_*2
 _num_levels_ = 4

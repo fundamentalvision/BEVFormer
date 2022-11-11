@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/BEVFormer.iml" filepath="$PROJECT_DIR$/.idea/BEVFormer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../mmdetection3d/.idea/mmdetection3d.iml" filepath="$PROJECT_DIR$/../mmdetection3d/.idea/mmdetection3d.iml" />
     </modules>
   </component>
 </project>

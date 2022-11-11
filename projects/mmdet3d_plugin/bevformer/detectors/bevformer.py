@@ -215,9 +215,9 @@ class BEVFormer(MVXTwoStageDetector):
             dict: Losses of different branches.
         """
         
-        len_queue = img.size(1)
+        len_queue = img.size(1) # total frames
         prev_img = img[:, :-1, ...]
-        img = img[:, -1, ...]
+        img = img[:, -1, ...] # current frame
 
         prev_img_metas = copy.deepcopy(img_metas)
         prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)

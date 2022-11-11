@@ -3,42 +3,42 @@
 # ---------------------------------------------
 #  Modified by Zhiqi Li
 # ---------------------------------------------
-import os
 import sys
-# sys.path.append('../projects')
+import os
+sys.path.append('../projects')
 print(os.path.abspath('../'))
-sys.path.append(os.path.abspath('./'))
 sys.path.append(os.path.abspath('../'))
 
-import os.path as osp
-import time
-from mmdet.datasets import replace_ImageToTensor
-from projects.mmdet3d_plugin.bevformer.apis.test import custom_multi_gpu_test
-from mmdet.apis import set_random_seed
-from mmdet3d.models import build_model
-from projects.mmdet3d_plugin.datasets.builder import build_dataloader
-from mmdet3d.datasets import build_dataset
-from mmdet3d.apis import single_gpu_test
+
+import argparse
+import mmcv
+
+import torch
+import warnings
+from mmcv import Config, DictAction
+from mmcv.cnn import fuse_conv_bn
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.cnn import fuse_conv_bn
-from mmcv import Config, DictAction
-import warnings
-import torch
-import mmcv
-import argparse
+
+from mmdet3d.apis import single_gpu_test
+from mmdet3d.datasets import build_dataset
+from projects.mmdet3d_plugin.datasets.builder import build_dataloader
+from mmdet3d.models import build_model
+from mmdet.apis import set_random_seed
+from projects.mmdet3d_plugin.bevformer.apis.test import custom_multi_gpu_test
+from mmdet.datasets import replace_ImageToTensor
+import time
+import os.path as osp
 
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description='MMDet test (and eval) a model')
+    parser = argparse.ArgumentParser(description='MMDet test (and eval) a model')
 
     parser.add_argument('--config', help='test config file path',
-                        default='projects/configs/bevformer/bevformer_base.py')
-    parser.add_argument('--checkpoint', help='checkpoint file',
-                        default='ckpts/r101_dcn_fcos3d_pretrain.pth')
+                        default='../projects/configs/bevformer/bevformer_base.py')
+    parser.add_argument('--checkpoint', help='checkpoint file', default='../ckpts/r101_dcn_fcos3d_pretrain.pth')
 
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
@@ -60,7 +60,7 @@ def parse_args():
              ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
-        '--show-dir', help='directory where results will be saved', default='show/')
+        '--show-dir', help='directory where results will be saved',default='/media/cuhp/SSD/Leadmove/BEV/BEVFormer/show/')
     parser.add_argument(
         '--gpu-collect',
         action='store_true',
@@ -120,9 +120,9 @@ def parse_args():
 def main():
     args = parse_args()
     args.eval = True
-    args.out = 'temp.pkl'
+    args.out = '../ttt.pkl'
     assert args.out or args.eval or args.format_only or args.show \
-        or args.show_dir, \
+           or args.show_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
          'results / save the results) with the argument "--out", "--eval"'
          ', "--format-only", "--show" or "--show-dir"')
@@ -136,7 +136,6 @@ def main():
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-
     # import modules from string list.
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings
@@ -172,7 +171,7 @@ def main():
 
     cfg.model.pretrained = None
     # in case the test dataset is concatenated
-    samples_per_gpu = 1  # bs=1
+    samples_per_gpu = 1
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
         samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
@@ -195,6 +194,11 @@ def main():
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+
+
+
+
+
 
     # set random seeds
     if args.seed is not None:
@@ -233,7 +237,7 @@ def main():
     if not distributed:
         # assert False
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, show=args.show, out_dir=args.show_dir)
+        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir)
     else:
         model = MMDistributedDataParallel(
             model.cuda(),
