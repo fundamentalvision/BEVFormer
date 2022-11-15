@@ -5,10 +5,9 @@
 # ---------------------------------------------
 import sys
 import os
-sys.path.append('../projects')
-print(os.path.abspath('../'))
 sys.path.append(os.path.abspath('../'))
-
+print(os.getcwd())
+print(os.listdir())
 
 import argparse
 import mmcv
@@ -30,7 +29,6 @@ from projects.mmdet3d_plugin.bevformer.apis.test import custom_multi_gpu_test
 from mmdet.datasets import replace_ImageToTensor
 import time
 import os.path as osp
-
 
 
 def parse_args():
@@ -194,11 +192,6 @@ def main():
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
-
-
-
-
-
 
     # set random seeds
     if args.seed is not None:

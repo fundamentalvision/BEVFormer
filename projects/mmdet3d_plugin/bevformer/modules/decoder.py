@@ -343,3 +343,13 @@ class CustomMSDeformableAttention(BaseModule):
             output = output.permute(1, 0, 2)
 
         return self.dropout(output) + identity
+
+if __name__ == '__main__':
+    a= torch.randn([3,4])
+    import torch.nn as nn
+    print(a)
+    s=nn.Softmax()
+    a=s(a)
+    print(a)
+    a=inverse_sigmoid(a)
+    print(a)

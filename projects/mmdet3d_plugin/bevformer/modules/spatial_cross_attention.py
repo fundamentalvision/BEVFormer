@@ -89,11 +89,11 @@ class SpatialCrossAttention(BaseModule):
                 **kwargs):
         """Forward Function of Detr3DCrossAtten.
         Args:
-            query (Tensor): Query of Transformer with shape
+            query (Tensor): Query of Transformer with shape (1,40000,256)
                 (num_query, bs, embed_dims).
-            key (Tensor): The key tensor with shape
+            key (Tensor): The key tensor with shape (6,30825,1,256)
                 `(num_key, bs, embed_dims)`.
-            value (Tensor): The value tensor with shape
+            value (Tensor): The value tensor with shape (6,30825,1,256)
                 `(num_key, bs, embed_dims)`. (B, N, C, H, W)
             residual (Tensor): The tensor used for addition, with the
                 same shape as `x`. Default None. If None, `x` will be used.

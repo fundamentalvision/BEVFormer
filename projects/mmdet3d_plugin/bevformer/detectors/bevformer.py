@@ -261,6 +261,7 @@ class BEVFormer(MVXTwoStageDetector):
             img_metas[0][0]['can_bus'][-1] = 0
             img_metas[0][0]['can_bus'][:3] = 0
 
+        # here is the prediction function
         new_prev_bev, bbox_results = self.simple_test(
             img_metas[0], img[0], prev_bev=self.prev_frame_info['prev_bev'], **kwargs)
         # During inference, we save the BEV features and ego motion of each timestamp.
@@ -282,6 +283,7 @@ class BEVFormer(MVXTwoStageDetector):
         return outs['bev_embed'], bbox_results
 
     def simple_test(self, img_metas, img=None, prev_bev=None, rescale=False):
+
         """Test function without augmentaiton."""
         img_feats = self.extract_feat(img=img, img_metas=img_metas)
 
