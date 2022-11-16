@@ -5,9 +5,7 @@
 # ---------------------------------------------
 import sys
 import os
-sys.path.append(os.path.abspath('../'))
-print(os.getcwd())
-print(os.listdir())
+sys.path.append('/media/cuhp/SSD/Leadmove/BEV/BEVFormer/')
 
 import argparse
 import mmcv
