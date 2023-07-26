@@ -5,9 +5,8 @@
 #  Modified by Zhiqi Li
 # ---------------------------------------------
 
-from projects.mmdet3d_plugin.models.utils.bricks import run_time
-from projects.mmdet3d_plugin.models.utils.visual import save_tensor
-from .custom_base_transformer_layer import MyCustomBaseTransformerLayer
+import numpy as np
+import torch
 import copy
 import warnings
 from mmcv.cnn.bricks.registry import (ATTENTION,
@@ -15,12 +14,9 @@ from mmcv.cnn.bricks.registry import (ATTENTION,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import TransformerLayerSequence
 from mmcv.runner import force_fp32, auto_fp16
-import numpy as np
-import torch
-import cv2 as cv
-import mmcv
 from mmcv.utils import TORCH_VERSION, digit_version
 from mmcv.utils import ext_loader
+from .custom_base_transformer_layer import MyCustomBaseTransformerLayer
 ext_module = ext_loader.load_ext(
     '_ext', ['ms_deform_attn_backward', 'ms_deform_attn_forward'])
 
@@ -91,6 +87,10 @@ class BEVFormerEncoder(TransformerLayerSequence):
     # This function must use fp32!!!
     @force_fp32(apply_to=('reference_points', 'img_metas'))
     def point_sampling(self, reference_points, pc_range,  img_metas):
+        # NOTE: close tf32 here.
+        allow_tf32 = torch.backends.cuda.matmul.allow_tf32
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
 
         lidar2img = []
         for img_meta in img_metas:
@@ -143,9 +143,13 @@ class BEVFormerEncoder(TransformerLayerSequence):
         reference_points_cam = reference_points_cam.permute(2, 1, 3, 0, 4)
         bev_mask = bev_mask.permute(2, 1, 3, 0, 4).squeeze(-1)
 
+        torch.backends.cuda.matmul.allow_tf32 = allow_tf32
+        torch.backends.cudnn.allow_tf32 = allow_tf32
+
         return reference_points_cam, bev_mask
 
-    @auto_fp16()
+    # NOTE: disable fp16 on head
+    # @auto_fp16()
     def forward(self,
                 bev_query,
                 key,
@@ -191,7 +195,7 @@ class BEVFormerEncoder(TransformerLayerSequence):
             ref_3d, self.pc_range, kwargs['img_metas'])
 
         # bug: this code should be 'shift_ref_2d = ref_2d.clone()', we keep this bug for reproducing our results in paper.
-        shift_ref_2d = ref_2d  # .clone()
+        shift_ref_2d = ref_2d.clone()
         shift_ref_2d += shift[:, None, None, :]
 
         # (num_query, bs, embed_dims) -> (bs, num_query, embed_dims)

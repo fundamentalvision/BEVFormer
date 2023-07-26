@@ -243,7 +243,7 @@ class CustomCollect3D(object):
 
     def __init__(self,
                  keys,
-                 meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img',
+                 meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img','lidar2cam',
                             'depth2img', 'cam2img', 'pad_shape',
                             'scale_factor', 'flip', 'pcd_horizontal_flip',
                             'pcd_vertical_flip', 'box_mode_3d', 'box_type_3d',
@@ -275,7 +275,10 @@ class CustomCollect3D(object):
 
         data['img_metas'] = DC(img_metas, cpu_only=True)
         for key in self.keys:
-            data[key] = results[key]
+            if key not in results:
+                data[key] = None 
+            else:
+                data[key] = results[key]
         return data
 
     def __repr__(self):
