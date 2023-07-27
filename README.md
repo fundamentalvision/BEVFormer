@@ -44,9 +44,10 @@ The proposed approach achieves the new state-of-the-art **56.9\%** in terms of N
 | [R101-DCN](https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth)  | BEVFormer-small | 24ep | 47.9|37.0 | 10500M |[config](projects/configs/bevformer/bevformer_small.py) |[model](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_small_epoch_24.pth)/[log](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_small_epoch_24.log) |
 | [R101-DCN](https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth)  | BEVFormer-base | 24ep | 51.7|41.6 |28500M |[config](projects/configs/bevformer/bevformer_base.py) | [model](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_r101_dcn_24ep.pth)/[log](https://github.com/zhiqi-li/storage/releases/download/v1.0/bevformer_r101_dcn_24ep.log) |
 | [R50](https://pan.baidu.com/s/1Jh5Aq2YwcD6tdj7Sl5BB3g?pwd=5rij)  | BEVformerV2-t1-base | 24ep | 42.6 | 35.1 | 23952M |[config](projects/configs/bevformerv2/bevformerv2-r50-t1-base-24ep.py) | [model/log](https://pan.baidu.com/s/1ynzlAt1DQbH8NkqmisatTw?pwd=fdcv) |
-
+| [R50](https://pan.baidu.com/s/1Jh5Aq2YwcD6tdj7Sl5BB3g?pwd=5rij)  | BEVformerV2-t1-base | 48ep | 43.9 | 35.9 | 23952M |[config](projects/configs/bevformerv2/bevformerv2-r50-t1-base-48ep.py) | [model/log](https://pan.baidu.com/s/1ynzlAt1DQbH8NkqmisatTw?pwd=fdcv) |
 # Catalog
-- [x] BEVFormerV2
+- [ ] BEVFormerV2 Optimization, including memory, speed, inference.
+- [x] BEVFormerV2 Release
 - [ ] BEV Segmentation checkpoints
 - [ ] BEV Segmentation code
 - [x] 3D Detection checkpoints
@@ -64,11 +65,18 @@ If this work is helpful for your research, please consider citing the following 
   journal={arXiv preprint arXiv:2203.17270},
   year={2022}
 }
+@article{Yang2022BEVFormerVA,
+  title={BEVFormer v2: Adapting Modern Image Backbones to Bird's-Eye-View Recognition via Perspective Supervision},
+  author={Chenyu Yang and Yuntao Chen and Haofei Tian and Chenxin Tao and Xizhou Zhu and Zhaoxiang Zhang and Gao Huang and Hongyang Li and Y. Qiao and Lewei Lu and Jie Zhou and Jifeng Dai},
+  journal={ArXiv},
+  year={2022},
+}
 ```
 
 # Acknowledgement
 
 Many thanks to these excellent open source projects:
+- [dd3d](https://github.com/TRI-ML/dd3d) 
 - [detr3d](https://github.com/WangYueFt/detr3d) 
 - [mmdet3d](https://github.com/open-mmlab/mmdetection3d)
 
