@@ -148,8 +148,7 @@ class BEVFormerEncoder(TransformerLayerSequence):
 
         return reference_points_cam, bev_mask
 
-    # NOTE: disable fp16 on head
-    # @auto_fp16()
+    @auto_fp16()
     def forward(self,
                 bev_query,
                 key,
