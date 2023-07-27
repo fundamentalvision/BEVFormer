@@ -1,1 +1,1 @@
-from .custom_hooks import TransferWeight, ModelEMA
+from .custom_hooks import TransferWeight
