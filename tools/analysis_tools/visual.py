@@ -272,7 +272,7 @@ def get_predicted_data(sample_data_token: str,
 
 
 
-def lidiar_render(sample_token, data,out_path=None):
+def lidar_render(sample_token, data,out_path=None):
     bbox_gt_list = []
     bbox_pred_list = []
     anns = nusc.get('sample', sample_token)['anns']
@@ -392,7 +392,7 @@ def render_sample_data(
         to False, the colors of the lidar data represent the distance from the center of the ego vehicle.
         If show_lidarseg is True, show_panoptic will be set to False.
     """
-    lidiar_render(sample_toekn, pred_data, out_path=out_path)
+    lidar_render(sample_toekn, pred_data, out_path=out_path)
     sample = nusc.get('sample', sample_toekn)
     # sample = data['results'][sample_token_list[0]][0]
     cams = [
