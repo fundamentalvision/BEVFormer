@@ -117,7 +117,7 @@ class BEVFormerEncoder(TransformerLayerSequence):
             D, B, 1, num_query, 4).repeat(1, 1, num_cam, 1, 1).unsqueeze(-1)
 
         lidar2img = lidar2img.view(
-            1, B, num_cam, 1, 4, 4).repeat(D, 1, 1, num_query, 1, 1)
+            1, 1, num_cam, 1, 4, 4).repeat(D, 1, 1, num_query, 1, 1) # BARAN
 
         reference_points_cam = torch.matmul(lidar2img.to(torch.float32),
                                             reference_points.to(torch.float32)).squeeze(-1)

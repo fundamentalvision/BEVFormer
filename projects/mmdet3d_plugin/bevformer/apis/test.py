@@ -58,6 +58,8 @@ def custom_multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     Returns:
         list: The prediction results.
     """
+    log("ENTERED TEST CUSTOM_MULTI_GPU_TEST")
+
     model.eval()
     bbox_results = []
     mask_results = []
@@ -68,6 +70,7 @@ def custom_multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     have_mask = False
     for i, data in enumerate(data_loader):
+        log("Data", data)
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
@@ -92,6 +95,10 @@ def custom_multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             
             for _ in range(batch_size * world_size):
                 prog_bar.update()
+        # log("bbox_results", bbox_result)
+        log("mask_results", mask_results)
+        log("Breaking the eval loop________________________________________________________________")
+        break
 
     # collect results from all ranks
     if gpu_collect:
@@ -162,3 +169,8 @@ def collect_results_cpu(result_part, size, tmpdir=None):
 
 def collect_results_gpu(result_part, size):
     collect_results_cpu(result_part, size)
+
+
+def log(title, text=""):
+    with open("debug_logs.txt", "a") as log_file:
+        print("\n", title, ":", text, file=log_file)

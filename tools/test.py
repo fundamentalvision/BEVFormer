@@ -24,6 +24,7 @@ from mmdet.datasets import replace_ImageToTensor
 import time
 import os.path as osp
 
+from code_baran.BEVCaptionGen import BEVCaptionGen
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -236,7 +237,7 @@ def main():
             broadcast_buffers=False)
         outputs = custom_multi_gpu_test(model, data_loader, args.tmpdir,
                                         args.gpu_collect)
-
+    """
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
@@ -260,7 +261,29 @@ def main():
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
 
             print(dataset.evaluate(outputs, **eval_kwargs))
+    """
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    
+    net = BEVCaptionGen()
+    
+    # build the dataloader
+    cfg = Config.fromfile("./projects/configs/bevformer/bevformer_tiny.py")
+    dataset = build_dataset(cfg.data.test)
+    data_loader = build_dataloader(
+        dataset,
+        samples_per_gpu=1,
+        workers_per_gpu=cfg.data.workers_per_gpu,
+        dist=True,
+        shuffle=False,
+        nonshuffler_sampler=cfg.data.nonshuffler_sampler,
+    )
+
+    for i, data in enumerate(data_loader):
+        with torch.no_grad():
+            result = net.generate(data)
+            print(result)
+    
+

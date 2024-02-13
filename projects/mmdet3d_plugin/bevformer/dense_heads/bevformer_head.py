@@ -38,6 +38,7 @@ class BEVFormerHead(DETRHead):
                  bev_w=30,
                  **kwargs):
 
+        log("ENTERED BEVFORMER HEAD INIT")
         self.bev_h = bev_h
         self.bev_w = bev_w
         self.fp16_enabled = False
@@ -65,9 +66,14 @@ class BEVFormerHead(DETRHead):
             *args, transformer=transformer, **kwargs)
         self.code_weights = nn.Parameter(torch.tensor(
             self.code_weights, requires_grad=False), requires_grad=False)
+        
+        log("Printing inside the BEVFormer_Head init___________________________________________________")
+        log("__dict__ of BEVFormer Head", self.__dict__)
 
     def _init_layers(self):
         """Initialize classification branch and regression branch of head."""
+        
+        log("ENTERED BEVFORMER HEAD INIT_LAYERS")
         cls_branch = []
         for _ in range(self.num_reg_fcs):
             cls_branch.append(Linear(self.embed_dims, self.embed_dims))
@@ -82,6 +88,10 @@ class BEVFormerHead(DETRHead):
             reg_branch.append(nn.ReLU())
         reg_branch.append(Linear(self.embed_dims, self.code_size))
         reg_branch = nn.Sequential(*reg_branch)
+
+        log("Printing inside the BEVFormer_Head _init_layers______________________________________________")
+        log("CLS branch:", cls_branch)
+        log("REG branch:", reg_branch)
 
         def _get_clones(module, N):
             return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
@@ -108,6 +118,9 @@ class BEVFormerHead(DETRHead):
 
     def init_weights(self):
         """Initialize weights of the DeformDETR head."""
+
+        log("ENTERED BEVFORMER HEAD INIT_WEIGHTS")
+
         self.transformer.init_weights()
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
@@ -131,6 +144,9 @@ class BEVFormerHead(DETRHead):
                 head with normalized coordinate format (cx, cy, w, l, cz, h, theta, vx, vy). \
                 Shape [nb_dec, bs, num_query, 9].
         """
+
+        log("ENTERED BEVFORMER HEAD FORWARD")
+
         bs, num_cam, _, _, _ = mlvl_feats[0].shape
         dtype = mlvl_feats[0].dtype
         object_query_embeds = self.query_embedding.weight.to(dtype)
@@ -209,6 +225,23 @@ class BEVFormerHead(DETRHead):
             'enc_cls_scores': None,
             'enc_bbox_preds': None,
         }
+        
+        log("Printing inside the BEVFormer_Head forward___________________________________________________")
+        log("Query embedding:", self.query_embedding)
+        log("Object query embeds:", object_query_embeds)
+        log(f"Object query embeds shape: {object_query_embeds.shape}")
+        log("BEV Qs:", bev_queries)
+        log(f"BEV Qs shape: {bev_queries.shape}")
+        log("BEV mask:", bev_mask)
+        log(f"BEV mask shape: {bev_mask.shape}")
+        log("BEV pos:", bev_pos)
+        log(f"BEV pos shape: {bev_pos.shape}")
+        log("OUTPUTS", outputs)
+        log("BEV embed:", bev_embed)
+        log(f"BEV embed shape", bev_embed.shape)
+        log("OUTS:", outs)
+        log("all_cs_scores shape", outs["all_cls_scores"].shape)
+        log("all_bbox_preds shape", outs["all_bbox_preds"].shape)
 
         return outs
 
@@ -241,6 +274,7 @@ class BEVFormerHead(DETRHead):
                 - pos_inds (Tensor): Sampled positive indices for each image.
                 - neg_inds (Tensor): Sampled negative indices for each image.
         """
+        log("ENTERED BEVFORMER HEAD GET_TAGET_SINGLE")
 
         num_bboxes = bbox_pred.size(0)
         # assigner and sampler
@@ -306,6 +340,8 @@ class BEVFormerHead(DETRHead):
                 - num_total_neg (int): Number of negative samples in all \
                     images.
         """
+        log("ENTERED BEVFORMER HEAD GET_TARGETS")
+
         assert gt_bboxes_ignore_list is None, \
             'Only supports for gt_bboxes_ignore setting to None.'
         num_imgs = len(cls_scores_list)
@@ -346,6 +382,9 @@ class BEVFormerHead(DETRHead):
             dict[str, Tensor]: A dictionary of loss components for outputs from
                 a single decoder layer.
         """
+
+        log("ENTERED BEVFORMER HEAD LOSS SINGLE")
+
         num_imgs = cls_scores.size(0)
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
         bbox_preds_list = [bbox_preds[i] for i in range(num_imgs)]
@@ -426,6 +465,9 @@ class BEVFormerHead(DETRHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+
+        log("ENTERED BEVFORMER HEAD LOSS")
+
         assert gt_bboxes_ignore is None, \
             f'{self.__class__.__name__} only supports ' \
             f'for gt_bboxes_ignore setting to None.'
@@ -488,6 +530,7 @@ class BEVFormerHead(DETRHead):
         Returns:
             list[dict]: Decoded bbox, scores and labels after nms.
         """
+        log("ENTERED BEVFORMER HEAD GET_BBOXES")
 
         preds_dicts = self.bbox_coder.decode(preds_dicts)
 
@@ -681,3 +724,8 @@ class BEVFormerHead_GroupDETR(BEVFormerHead):
                 loss_dict[f'd{num_dec_layer}.loss_bbox'] += loss_bbox_i / self.group_detr
                 num_dec_layer += 1
         return loss_dict
+
+
+def log(title, text=""):
+    with open("debug_logs.txt", "a") as log_file:
+        print("\n", title, ":", text, file=log_file)

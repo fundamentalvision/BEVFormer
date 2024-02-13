@@ -129,12 +129,11 @@ class BEVFormer(MVXTwoStageDetector):
         Returns:
             dict: Losses of each branch.
         """
-
         outs = self.pts_bbox_head(
             pts_feats, img_metas, prev_bev)
-        loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
-        losses = self.pts_bbox_head.loss(*loss_inputs, img_metas=img_metas)
-        return losses
+        # loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
+        # losses = self.pts_bbox_head.loss(*loss_inputs, img_metas=img_metas)
+        return outs # BARAN
 
     def forward_dummy(self, img):
         dummy_metas = None
@@ -226,12 +225,12 @@ class BEVFormer(MVXTwoStageDetector):
             prev_bev = None
         img_feats = self.extract_feat(img=img, img_metas=img_metas)
         losses = dict()
-        losses_pts = self.forward_pts_train(img_feats, gt_bboxes_3d,
+        losses_pts, outs = self.forward_pts_train(img_feats, gt_bboxes_3d,
                                             gt_labels_3d, img_metas,
                                             gt_bboxes_ignore, prev_bev)
 
         losses.update(losses_pts)
-        return losses
+        return losses, outs
 
     def forward_test(self, img_metas, img=None, **kwargs):
         for var, name in [(img_metas, 'img_metas')]:
@@ -260,6 +259,11 @@ class BEVFormer(MVXTwoStageDetector):
             img_metas[0][0]['can_bus'][-1] = 0
             img_metas[0][0]['can_bus'][:3] = 0
 
+        # BARAN ------------------------------------------------------------------------------
+        if kwargs.get("only_bev_embed"):
+            return self.forward_bev_embed(img[0], img_metas[0], prev_bev=self.prev_frame_info['prev_bev'])
+        # BARAN ------------------------------------------------------------------------------
+        
         new_prev_bev, bbox_results = self.simple_test(
             img_metas[0], img[0], prev_bev=self.prev_frame_info['prev_bev'], **kwargs)
         # During inference, we save the BEV features and ego motion of each timestamp.
@@ -288,5 +292,13 @@ class BEVFormer(MVXTwoStageDetector):
         new_prev_bev, bbox_pts = self.simple_test_pts(
             img_feats, img_metas, prev_bev, rescale=rescale)
         for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
-            result_dict['pts_bbox'] = pts_bbox
+            result_dict['pts_bbox'] = pts_bbox 
         return new_prev_bev, bbox_list
+
+    # BARAN ------------------------------------------------------------------------------
+    def forward_bev_embed(self, img, img_metas, prev_bev=None):
+        """Return bev embeddings only. (Thesis)"""
+
+        img_feats = self.extract_feat(img=img, img_metas=img_metas)
+        bev_embed = self.pts_bbox_head(img_feats, img_metas, prev_bev=prev_bev, only_bev=True)
+        return bev_embed
