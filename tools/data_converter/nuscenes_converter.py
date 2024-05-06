@@ -171,7 +171,7 @@ def _get_can_bus_info(nusc, nusc_can_bus, sample):
     can_bus.extend(pos)
     can_bus.extend(rotation)
     for key in last_pose.keys():
-        can_bus.extend(pose[key])  # 16 elements
+        can_bus.extend(last_pose[key])  # 16 elements
     can_bus.extend([0., 0.])
     return np.array(can_bus)
 
