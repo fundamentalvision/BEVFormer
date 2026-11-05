@@ -1,5 +1,14 @@
 # Shared evaluation for every BEV variant: results JSON (nuScenes format) in -> mAP and mATE out.
 # Run this file directly to check it on the ground truth (should print mAP 1.0, mATE 0.0).
+#
+# Metrics (averaged over the 6 CLASSES below):
+#   mAP  = mean Average Precision: did we find the objects without false alarms? 0-1, higher is better.
+#          a prediction counts as correct if its center is within 0.5 / 1 / 2 / 4 m of a real object
+#          (on the ground, x-y only); AP is averaged over those 4 thresholds.
+#   mATE = mean Average Translation Error: for correct matches (2 m threshold), how far off is the
+#          center, in metres? lower is better. if nothing matches, nuScenes reports 1.0 as a placeholder.
+#   runtime  = time to run the method's whole script, if it saved a timing.json; note the device,
+#          CPU and GPU times are not directly comparable.
 
 import json
 import os
@@ -27,6 +36,7 @@ def val_sample_tokens(nusc):
             tokens.append(sample["token"])
     return tokens
 
+
 # get the ego pose for a given sample
 def ego_pose(nusc, sample_token):
     # where the car is in the world at this sample: position t and rotation q
@@ -52,6 +62,7 @@ def ego_box_to_global(box, t, q, sample_token):
         "attribute_name": "",        # we don't estimate attributes
     }
 
+
 def save_results(results, path):
     # results = {sample_token: [result box, ...]} in the nuScenes format (global frame),
     # with an entry for every mini_val sample (empty list if nothing was detected)
@@ -60,6 +71,14 @@ def save_results(results, path):
             "use_map": False, "use_external": False}                       # does not affect scores
     with open(path, "w") as f:
         json.dump({"meta": meta, "results": results}, f)
+
+
+def save_timing(total_sec, n_samples, device, path):
+    # runtime of a method, saved next to its results.json so evaluate() can report it
+    # total_sec: time to run the whole script (loading data and model, all samples)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump({"total_sec": total_sec, "sec_per_sample": total_sec / n_samples, "device": device}, f)
 
 
 # evaluate a given method
@@ -84,8 +103,17 @@ def evaluate(nusc, variant_name, results_path):
     mAP = float(np.mean(aps))
     mATE = float(np.nanmean(ates))
 
-    print(f"[{variant_name}] mAP {mAP:.4f} | mATE {mATE:.3f} m")
-    return {"mAP": mAP, "mATE": mATE}
+    # runtime, if the method saved a timing.json next to its results (see save_timing)
+    timing_path = os.path.join(os.path.dirname(results_path), "timing.json")
+    sec_per_sample, speed = None, "no timing"
+    if os.path.exists(timing_path):
+        with open(timing_path) as f:
+            timing = json.load(f)
+        sec_per_sample = timing["sec_per_sample"]
+        speed = f"{timing['total_sec']:.0f} s total, {sec_per_sample:.2f} s/sample ({timing['device']})"
+
+    print(f"[{variant_name}] mAP {mAP:.4f} | mATE {mATE:.3f} m | {speed}")
+    return {"mAP": mAP, "mATE": mATE, "sec_per_sample": sec_per_sample}
 
 
 if __name__ == "__main__":

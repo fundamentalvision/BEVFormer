@@ -54,6 +54,9 @@ Expected output: `404`, then `(900, 1600, 3)` for each of the 6 cameras.
 
 All methods are scored the same way: nuScenes `v1.0-mini` val (81 samples), mAP and mATE over 6 classes (car, truck, bus, pedestrian, bicycle, motorcycle), using `eval_benchmark.py`.
 
+- **mAP** (mean Average Precision): did the method find the objects without false alarms? 0–1, higher is better. A prediction counts if its center is within 0.5 / 1 / 2 / 4 m of a real object; AP is averaged over those thresholds.
+- **mATE** (mean Average Translation Error): for correct matches, how far off is the center, in meters? Lower is better. If nothing matches, nuScenes reports 1.0 as a placeholder.
+
 The deterministic methods all use the same 2D vision model: Faster R-CNN ResNet-50 FPN v2, COCO-pretrained (torchvision), with no training.
 
 | # | Method | Type | Sensors | File |

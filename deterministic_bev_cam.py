@@ -1,3 +1,6 @@
+import time
+start = time.perf_counter()   # time the whole script, from the first line to saving results
+
 from nuscenes.nuscenes import NuScenes
 nusc = NuScenes(version="v1.0-mini", dataroot="v1.0-mini", verbose=False)
 # print(len(nusc.sample))   # expect 404
@@ -13,7 +16,7 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights
 
-from eval_benchmark import val_sample_tokens, ego_pose, ego_box_to_global, save_results
+from eval_benchmark import val_sample_tokens, ego_pose, ego_box_to_global, save_results, save_timing
 
 # build the BEV grid in ego coords in meters
 extent, res = 50.0, 0.1                   # cover +-50 m, 10 cm per pixel
@@ -137,6 +140,10 @@ for i, token in enumerate(tokens):
         results[token].append(ego_box_to_global(ego_box, t, q, token))
 
     print(f"{i + 1}/{len(tokens)}: {len(results[token])} boxes", flush=True)
+
+elapsed = time.perf_counter() - start
+save_timing(elapsed, len(tokens), "cpu", "outputs/cam_bev_detect/timing.json")
+print(f"Runtime: {elapsed:.1f} s total, {elapsed / len(tokens):.2f} s/sample")
 
 save_results(results, "outputs/cam_bev_detect/results.json")
 print("Saved outputs/cam_bev_detect/results.json")
