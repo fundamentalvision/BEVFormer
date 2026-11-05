@@ -120,3 +120,7 @@ if __name__ == "__main__":
     # ========== CAM-B: DETECTOR ON THE BEV IMAGE (null baseline) ==========
     # results come from running deterministic_bev_cam.py
     evaluate(nusc, "cam_bev_detect", "outputs/cam_bev_detect/results.json")
+
+    # ========== CAM-G: DETECTOR ON EACH CAMERA, PROJECTED TO THE GROUND ==========
+    # results come from running cam_ground_project.py
+    evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
