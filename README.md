@@ -49,3 +49,18 @@ python deterministic_bev_cam.py
 ```
 
 Expected output: `404`, then `(900, 1600, 3)` for each of the 6 cameras.
+
+## Plan: comparing 6 BEV methods
+
+All methods are scored the same way: nuScenes `v1.0-mini` val (81 samples), mAP and mATE over 6 classes (car, truck, bus, pedestrian, bicycle, motorcycle), using `eval_benchmark.py`.
+
+The deterministic methods all use the same 2D vision model: Faster R-CNN ResNet-50 FPN v2, COCO-pretrained (torchvision), with no training.
+
+| # | Method | Type | Sensors | File |
+|---|---|---|---|---|
+| 1 | Stitched BEV + 2D detector (**baseline**) | Deterministic | Camera | `deterministic_bev_cam.py` |
+| 2 | Per-camera detection, bottom-center projected to ground | Deterministic | Camera | `cam_ground_project.py` |
+| 3 | Camera rays matched to LiDAR points (Isaiah) | Deterministic | Camera + LiDAR | `deterministic_BEV.py` (on `master`) |
+| 4 | BEVFormer tiny | Model | Camera | `run_mini.py` |
+| 5 | BEVFormer FP16 | Model | Camera | `run_bev_fp16.py` |
+| 6 | BEVDet R50 | Model | Camera | `run_bevdet_r50.py` |
