@@ -13,7 +13,9 @@ except ImportError:
     linear_sum_assignment = None
 
 
-@BBOX_ASSIGNERS.register_module()
+# The shared MMDetection3D fork also registers this name. BEVFormer needs its
+# own normalized-box assignment implementation; BEVDet/BEVDepth use CenterHead.
+@BBOX_ASSIGNERS.register_module(force=True)
 class HungarianAssigner3D(BaseAssigner):
     """Computes one-to-one matching between predictions and ground truth.
     This class computes an assignment between the targets and the predictions

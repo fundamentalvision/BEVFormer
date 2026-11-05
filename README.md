@@ -12,18 +12,14 @@ source activate.sh
 ## Start
 
 ```bash
-python run_mini.py --frames 10 --warmup 3
+python run_mini.py
 ```
 
-Full mini validation + benchmark:
+Evaluates all 81 mini validation frames using the shared six-class mAP/mATE evaluator.
+Detections and evaluation results: `outputs/bevformer_tiny/`.
 
-```bash
-python run_mini.py --frames 0 --warmup 5 --eval
-```
-
-Results: `outputs/` (prediction image, timings, detections, metrics).
-
-[Environment details](runtime/README.md)
+All models and `eval_benchmark.py` share this activation. Checkpoints: `ckpts/`.
+[Shared requirements](requirements.txt).
 
 ---
 

@@ -9,6 +9,8 @@ from mmdet.datasets import DATASETS
 import torch
 import numpy as np
 from nuscenes.eval.common.utils import quaternion_yaw, Quaternion
+from nuscenes.utils.data_classes import Box
+from mmdet3d.datasets.nuscenes_dataset import lidar_nusc_box_to_global
 from .nuscnes_eval import NuScenesEval_custom
 from projects.mmdet3d_plugin.models.utils.visual import save_tensor
 from mmcv.parallel import DataContainer as DC
@@ -180,6 +182,48 @@ class CustomNuScenesDataset(NuScenesDataset):
                 idx = self._rand_another(idx)
                 continue
             return data
+
+    def _format_bbox(self, results, jsonfile_prefix=None):
+        """Export BEVFormer's original LiDAR box convention under BEVDet's fork."""
+        annotations = {}
+        for detection, info in zip(results, self.data_infos):
+            predicted = detection['boxes_3d']
+            boxes = []
+            for center, size, yaw, velocity, score, label in zip(
+                    predicted.gravity_center.numpy(), predicted.dims.numpy(),
+                    predicted.yaw.numpy(), predicted.tensor[:, 7:9].numpy(),
+                    detection['scores_3d'].numpy(), detection['labels_3d'].numpy()):
+                boxes.append(Box(
+                    center, size,
+                    Quaternion(axis=[0, 0, 1], radians=float(-yaw - np.pi / 2)),
+                    label=int(label), score=float(score), velocity=(*velocity, 0.0),
+                ))
+            boxes = lidar_nusc_box_to_global(
+                info, boxes, self.CLASSES, self.eval_detection_configs, self.eval_version,
+            )
+            annotations[info['token']] = []
+            for box in boxes:
+                name = self.CLASSES[box.label]
+                attribute = self.DefaultAttribute[name]
+                moving = np.linalg.norm(box.velocity[:2]) > 0.2
+                if moving and name in ['car', 'truck', 'bus', 'trailer', 'construction_vehicle']:
+                    attribute = 'vehicle.moving'
+                elif moving and name in ['bicycle', 'motorcycle']:
+                    attribute = 'cycle.with_rider'
+                elif not moving and name == 'pedestrian':
+                    attribute = 'pedestrian.standing'
+                elif not moving and name == 'bus':
+                    attribute = 'vehicle.stopped'
+                annotations[info['token']].append(dict(
+                    sample_token=info['token'], translation=box.center.tolist(),
+                    size=box.wlh.tolist(), rotation=box.orientation.elements.tolist(),
+                    velocity=box.velocity[:2].tolist(), detection_name=name,
+                    detection_score=box.score, attribute_name=attribute,
+                ))
+        mmcv.mkdir_or_exist(jsonfile_prefix)
+        path = osp.join(jsonfile_prefix, 'results_nusc.json')
+        mmcv.dump(dict(meta=self.modality, results=annotations), path)
+        return path
 
     def _evaluate_single(self,
                          result_path,

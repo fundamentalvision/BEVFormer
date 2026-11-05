@@ -141,6 +141,4 @@ dmypy.json
 .venv/
 outputs/
 visualizations/
-runtime/logs/
-runtime/compat/
-runtime/mmdetection3d
+v1.0-mini

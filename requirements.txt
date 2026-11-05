@@ -1,0 +1,43 @@
+# Shared Python dependencies: BEVFormer, BEVDet, BEVDepth, deterministic BEV,
+# and eval_benchmark.py. Python 3.11 / CUDA 12.8.
+# In the existing environment: python -m pip install -r requirements.txt
+# Fresh setup also needs CUDA 12.8 build tools, patched MMCV, and locally
+# compiled model extensions targeting this GPU (sm_120).
+# MMDetection3D and BEVDepth use local builds; do not replace them from PyPI.
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+addict==2.4.0
+Cython==3.0.12
+einops==0.8.1
+future==1.0.0
+fvcore==0.1.5.post20221221
+iopath==0.1.9
+ipython==8.12.3
+lyft-dataset-sdk==0.0.8
+matplotlib==3.7.5
+mmcv-full==1.7.2
+mmdet==2.28.2
+mmsegmentation==0.30.0
+networkx==2.8.8
+numba==0.58.1
+numpy==1.26.4
+nuscenes-devkit==1.2.0
+opencv-python==4.11.0.86
+opencv-python-headless==4.11.0.86
+packaging
+pandas==1.5.3
+plyfile==1.0.3
+pyquaternion==0.9.9
+pytorch-lightning==1.9.5
+PyYAML==6.0.2
+scikit-image==0.21.0
+scipy==1.15.3
+seaborn==0.13.2
+tensorboard==2.20.0
+tensorboardX==2.6.2.2
+timm==0.6.13
+torch==2.8.0+cu128
+torchmetrics==0.11.4
+torchvision==0.23.0+cu128
+trimesh==3.23.5
+yapf==0.40.1
