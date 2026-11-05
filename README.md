@@ -60,7 +60,7 @@ The deterministic methods all use the same 2D vision model: Faster R-CNN ResNet-
 |---|---|---|---|---|
 | 1 | Stitched BEV + 2D detector (**baseline**) | Deterministic | Camera | `deterministic_bev_cam.py` |
 | 2 | Per-camera detection, bottom-center projected to ground | Deterministic | Camera | `cam_ground_project.py` |
-| 3 | Camera detections + radar depth (late fusion) | Deterministic | Camera + radar | TBD |
-| 4 | BEVFormer | Model | Camera | `run_mini.py` |
-| 5 | FCOS3D (monocular 3D, per camera) | Model | Camera | TBD |
-| 6 | Camera + LiDAR (partner) | Model | Camera + LiDAR | TBD |
+| 3 | Camera rays matched to LiDAR points (Isaiah) | Deterministic | Camera + LiDAR | `deterministic_BEV.py` (on `master`) |
+| 4 | BEVFormer tiny | Model | Camera | `run_mini.py` |
+| 5 | BEVFormer FP16 | Model | Camera | `run_bev_fp16.py` |
+| 6 | BEVDet R50 | Model | Camera | `run_bevdet_r50.py` |
