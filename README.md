@@ -1,5 +1,29 @@
 # Project 3: BEVFormer + nuScenes
 
+## Running the eval benchmark
+
+`eval_benchmark.py` scores every method's saved `outputs/<method>/results.json` and prints mAP, mATE and runtime. It does not run the methods, so run each method's script first (`outputs/` is git-ignored, so results are not shared through git).
+
+```bash
+cd DeterministicBev                    # the project folder
+source .venv/bin/activate              # or `source activate.sh` on the BEVFormer machine
+
+# 1. produce results (only needed when a method changes)
+python deterministic_bev_cam.py        # stitched BEV baseline  -> outputs/cam_bev_detect/
+python cam_ground_project.py           # ground projection      -> outputs/cam_ground_project/
+python deterministic_bev_lidar.py      # camera + LiDAR         -> outputs/lidar_bev/
+
+# 2. score everything
+python eval_benchmark.py
+```
+
+Expected output, one line per method:
+
+```
+[ground_truth] mAP 1.0000 | mATE 0.000 m | no timing        <- sanity check
+[cam_bev_detect] mAP ... | mATE ... m | ... s total, ... s/sample (cpu)
+```
+
 ## Environment
 
 Already installed: Conda `bevformer`, Python 3.11, PyTorch 2.8 / CUDA 12.8.

@@ -24,7 +24,7 @@ load_dotenv()
 class DeterministicBEV:
     def __init__(self):
         self.nusc = NuScenes(version='v1.0-mini', dataroot=str(ROOT / 'data/nuscenes'), verbose=True)
-        self.device = torch.device("cuda")
+        self.device = torch.device("cpu")
         self.model = fasterrcnn_resnet50_fpn_v2(weights=FasterRCNN_ResNet50_FPN_V2_Weights.DEFAULT).to(self.device).eval()
 
     # Returns a list of rays IN THE CAMERA FRAME, from pixel coordinates.
