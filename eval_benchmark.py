@@ -152,3 +152,7 @@ if __name__ == "__main__":
     # ========== CAM-G: DETECTOR ON EACH CAMERA, PROJECTED TO THE GROUND ==========
     # results come from running cam_ground_project.py
     evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
+
+    # ========== LIDAR: CAMERA DETECTIONS + LIDAR DEPTH (Isaiah) ==========
+    # results come from running deterministic_bev_lidar.py
+    evaluate(nusc, "lidar_bev", "outputs/lidar_bev/results.json")
