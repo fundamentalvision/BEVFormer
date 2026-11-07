@@ -24,27 +24,6 @@ Expected output, one line per method:
 [cam_bev_detect] mAP ... | mATE ... m | ... s total, ... s/sample (cpu)
 ```
 
-## Environment
-
-Already installed: Conda `bevformer`, Python 3.11, PyTorch 2.8 / CUDA 12.8.
-
-```bash
-cd "/home/isa/Documents/Comp Robo/Project3"
-source activate.sh
-```
-
-## Start
-
-```bash
-python run_mini.py
-```
-
-Evaluates all 81 mini validation frames using the shared six-class mAP/mATE evaluator.
-Detections and evaluation results: `outputs/bevformer_tiny/`.
-
-All models and `eval_benchmark.py` share this activation. Checkpoints: `ckpts/`.
-[Shared requirements](requirements.txt).
-
 ---
 
 # BEV Cam (Jack)
