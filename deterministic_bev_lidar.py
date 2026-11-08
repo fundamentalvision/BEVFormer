@@ -1,3 +1,6 @@
+import time
+start = time.perf_counter()   # time the whole script, from the first line to saving results
+
 from pathlib import Path
 import cv2
 import numpy as np
@@ -12,7 +15,7 @@ import os
 import tqdm
 from dotenv import load_dotenv
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights
-from eval_benchmark import val_sample_tokens, ego_pose, ego_box_to_global, save_results
+from eval_benchmark import val_sample_tokens, ego_pose, ego_box_to_global, save_results, save_timing
 from eval_benchmark import evaluate as evaluate_results
 
 ROOT = Path(__file__).resolve().parent
@@ -195,6 +198,10 @@ class DeterministicBEV:
 if __name__ == "__main__":
     bev = DeterministicBEV()
     results = bev.evaluate()
+
+    elapsed = time.perf_counter() - start
+    save_timing(elapsed, len(results), "cpu", str(ROOT / "outputs/lidar_bev/timing.json"))
+    print(f"Runtime: {elapsed:.1f} s total, {elapsed / len(results):.2f} s/sample")
 
     path = str(ROOT / "outputs/lidar_bev/results.json")
     save_results(results, path)
