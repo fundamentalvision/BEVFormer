@@ -105,15 +105,16 @@ def evaluate(nusc, variant_name, results_path):
 
     # runtime, if the method saved a timing.json next to its results (see save_timing)
     timing_path = os.path.join(os.path.dirname(results_path), "timing.json")
-    sec_per_sample, speed = None, "no timing"
+    sec_per_sample, device, speed = None, None, "no timing"
     if os.path.exists(timing_path):
         with open(timing_path) as f:
             timing = json.load(f)
         sec_per_sample = timing["sec_per_sample"]
+        device = timing["device"].upper()
         speed = f"{timing['total_sec']:.0f} s total, {sec_per_sample:.2f} s/sample ({timing['device']})"
 
     print(f"[{variant_name}] mAP {mAP:.4f} | mATE {mATE:.3f} m | {speed}")
-    return {"mAP": mAP, "mATE": mATE, "sec_per_sample": sec_per_sample}
+    return {"mAP": mAP, "mATE": mATE, "sec_per_sample": sec_per_sample, "device": device}
 
 
 if __name__ == "__main__":
@@ -198,10 +199,15 @@ if __name__ == "__main__":
             if key == "sec_per_sample" and n in reported:
                 bar.set_hatch("//")
                 label += "\n(reported, GPU)"
+            elif key == "sec_per_sample" and scores[n]["device"] is not None:
+                label += f"\n({scores[n]['device']})"
             plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), label, ha="center", va="bottom")
         if key == "sec_per_sample":
-            plt.yscale("log")   # GPU (~0.03 s) and CPU (~14 s) differ by ~500x
-            title += "\nsolid = measured whole script on CPU, hatched = published GPU inference only (not comparable)"
+            plt.yscale("log")   # GPU and CPU times differ by a lot
+            plt.ylim(top=max(v for v in values if v) * 4)   # room above the tallest bar for its label
+            title += "\nmeasured whole script; deterministic methods on CPU, learned models on GPU"
+            if reported:
+                title += "\nhatched = published GPU inference only (not comparable)"
         plt.title(title)
         plt.tight_layout()
         plt.savefig(f"figs/benchmark_{key}.png", dpi=120)
