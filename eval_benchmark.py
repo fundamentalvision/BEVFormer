@@ -145,14 +145,34 @@ if __name__ == "__main__":
     save_results(results, path)
     evaluate(nusc, "ground_truth", path)
 
+    scores = {}   # method name -> {"mAP", "mATE", "sec_per_sample"}, used for the bar graphs
+
     # ========== CAM-B: DETECTOR ON THE BEV IMAGE (null baseline) ==========
     # results come from running deterministic_bev_cam.py
-    evaluate(nusc, "cam_bev_detect", "outputs/cam_bev_detect/results.json")
+    scores["cam_bev_detect"] = evaluate(nusc, "cam_bev_detect", "outputs/cam_bev_detect/results.json")
 
     # ========== CAM-G: DETECTOR ON EACH CAMERA, PROJECTED TO THE GROUND ==========
     # results come from running cam_ground_project.py
-    evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
+    scores["cam_ground_project"] = evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
 
     # ========== LIDAR: CAMERA DETECTIONS + LIDAR DEPTH (Isaiah) ==========
     # results come from running deterministic_bev_lidar.py
-    evaluate(nusc, "lidar_bev", "outputs/lidar_bev/results.json")
+    scores["lidar_bev"] = evaluate(nusc, "lidar_bev", "outputs/lidar_bev/results.json")
+
+    # ========== BAR GRAPHS: ONE FIGURE PER METRIC ==========
+    import matplotlib.pyplot as plt
+    names = list(scores.keys())
+    metrics = [("mAP", "mAP (higher is better)"),
+               ("mATE", "mATE in m (lower is better)"),
+               ("sec_per_sample", "runtime in s/sample (lower is better)")]
+    for key, title in metrics:
+        values = [scores[n][key] if scores[n][key] is not None else 0 for n in names]   # 0 = no timing.json yet
+        plt.figure(figsize=(6, 4))
+        bars = plt.bar(names, values, color=["tab:gray", "tab:blue", "tab:orange"])
+        for bar, n in zip(bars, names):
+            label = "no timing" if scores[n][key] is None else f"{scores[n][key]:.3f}"
+            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), label, ha="center", va="bottom")
+        plt.title(title)
+        plt.tight_layout()
+        plt.savefig(f"figs/benchmark_{key}.png", dpi=120)
+    plt.show()
