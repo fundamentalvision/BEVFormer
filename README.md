@@ -45,46 +45,68 @@ In terms of the database choice, we picked nuScenes, a driving dataset recorded 
 - **Multi-source sensor data:** Sensor data from camera, LiDAR and radar are all provided on the same frames. All sensors are recorded together, with calibration already and the car's position for every frame. This lets us compare sensor setups (camera only vs camera + LiDAR) on exactly the same scenes.
 - **Compatibility with pretrained models:** BEVFormer and BEVDet publish checkpoints trained on nuScenes, so we can evaluate the learned methods without training them ourselves.
 
+To run any of the processing scripts, the dataset `v1.0-mini` needs to be downloaded first from the official NuScenes website.
 
-## 3. Evaluation
-- mAP and mATE (center-distance thresholds).
-- Runtime: whole-script time, device noted (CPU vs GPU caveat).
-- Ground-truth sanity check (mAP 1.0, mATE 0.0).
+## 3. Methods
 
-## 4. Methods
-### 4.1 Deterministic (shared detector: Faster R-CNN R50-FPN v2, COCO)
-- Stitched BEV + detector (baseline)
-- Per-camera detection + ground projection
-- Camera rays + LiDAR (Isaiah)
+To maximize our learning on the topic of modern BEV processing, we decided to explore both learned models and deterministic methods in their performance in identifying and localizing objects. In this section, we present a total of six different methods we explored using the dataset. Three are learned, publicly available models found online, whereas the other three are deterministic process created by us.
 
-### 4.2 Learned
-- BEVFormer FP32 / FP16
-- BEVDet R50
+### 3.1 Stitched BEV + detector (baseline)
+- Idea: _placeholder_
+- Pipeline: _placeholder_
+- Assumptions / limitations: _placeholder_
+- Figure: _placeholder_
 
-## 5. Results
+### 3.2 Per-camera detection + ground projection
+- Idea: _placeholder_
+- Pipeline: _placeholder_
+- Assumptions / limitations: _placeholder_
+- Figure: _placeholder_
+
+### 3.3 Camera rays + LiDAR
+- Idea: _placeholder_
+- Pipeline: _placeholder_
+- Assumptions / limitations: _placeholder_
+- Figure: _placeholder_
+
+### 3.4 BEVFormer tiny (FP32)
+- Idea: _placeholder_
+- Pipeline: _placeholder_
+- Assumptions / limitations: _placeholder_
+
+### 3.5 BEVFormer tiny (FP16)
+- Idea: _placeholder_
+- Difference from FP32: _placeholder_
+
+### 3.6 BEVDet R50
+- Idea: _placeholder_
+- Pipeline: _placeholder_
+- Assumptions / limitations: _placeholder_
+
+## 4. Results
 - Main table: mAP, mATE, runtime, device for all 6 methods.
 - Per-class AP table (0.5 / 1 / 2 / 4 m).
 - Optional figure: BEV predictions vs ground truth.
 
-## 6. Discussion
+## 5. Discussion
 - Why the stitched BEV fails (IPM smears tall objects).
 - Ground projection: detection works, depth is the bottleneck (flat-ground triangle, error grows with distance).
 - Accuracy vs compute (6 detector passes vs 1).
 - Camera vs LiDAR: measured vs inferred distance.
 - Deterministic vs learned.
 
-## 7. Limitations
+## 6. Limitations
 - Small eval set (81 samples).
 - No yaw / size / velocity estimation in the deterministic methods.
 - CPU vs GPU timing not directly comparable.
 - Generic COCO detector, not trained on driving data.
 
-## 8. Future work
+## 7. Future work
 - Camera + radar late fusion.
 - Tracking across frames.
 - Combining depth cues (ground contact + known size).
 
-## 9. Conclusion
+## 8. Conclusion
 
 ## References
 - nuScenes, Faster R-CNN, BEVFormer, BEVDet.
