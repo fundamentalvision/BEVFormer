@@ -174,8 +174,20 @@ if __name__ == "__main__":
     # ========== BAR GRAPHS: ONE FIGURE PER METRIC ==========
     import matplotlib.pyplot as plt
     names = list(scores.keys())
-    metrics = [("mAP", "mAP (higher is better)"),
-               ("mATE", "mATE in m (lower is better)"),
+
+    # the learned models have no timing.json (they ran on Isaiah's GPU without a timer), so the runtime chart
+    # uses PUBLISHED speeds for them instead, drawn hatched and labelled "reported".
+    # these are GPU inference only (RTX 3090), NOT comparable to our whole-script CPU times:
+    #   BEVDet R50: 30.7 FPS, official BEVDet repo (PyTorch, no postprocessing)
+    #   BEVFormer tiny FP32 / FP16: 37.9 / 69.2 FPS, unofficial TensorRT port (gitee: superpig2021/BEVFormer_tensorrt)
+    reported = {"bevformer_tiny": 1 / 37.9, "bevformer_tiny_fp16": 1 / 69.2, "bevdet-r50": 1 / 30.7}
+    for n in list(reported):
+        if scores[n]["sec_per_sample"] is None:
+            scores[n]["sec_per_sample"] = reported[n]
+        else:
+            del reported[n]   # a real measurement exists, use it
+    metrics = [("mAP", "mAP: mean Average Precision (higher is better)"),
+               ("mATE", "mATE: mean Average Translation Error, in m (lower is better)"),
                ("sec_per_sample", "runtime in s/sample (lower is better)")]
     for key, title in metrics:
         values = [scores[n][key] if scores[n][key] is not None else 0 for n in names]   # 0 = no timing.json yet
@@ -183,7 +195,13 @@ if __name__ == "__main__":
         bars = plt.bar(names, values, color=["tab:gray", "tab:blue", "tab:orange", "tab:green", "tab:olive", "tab:purple"])
         for bar, n in zip(bars, names):
             label = "no timing" if scores[n][key] is None else f"{scores[n][key]:.3f}"
+            if key == "sec_per_sample" and n in reported:
+                bar.set_hatch("//")
+                label += "\n(reported, GPU)"
             plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), label, ha="center", va="bottom")
+        if key == "sec_per_sample":
+            plt.yscale("log")   # GPU (~0.03 s) and CPU (~14 s) differ by ~500x
+            title += "\nsolid = measured whole script on CPU, hatched = published GPU inference only (not comparable)"
         plt.title(title)
         plt.tight_layout()
         plt.savefig(f"figs/benchmark_{key}.png", dpi=120)
