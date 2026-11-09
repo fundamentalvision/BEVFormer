@@ -51,11 +51,21 @@ To run any of the processing scripts, the dataset `v1.0-mini` needs to be downlo
 
 To maximize our learning on the topic of modern BEV processing, we decided to explore both learned models and deterministic methods in their performance in identifying and localizing objects. In this section, we present a total of six different methods we explored using the dataset. Three are learned, publicly available models found online, whereas the other three are deterministic process created by us.
 
-### 3.1 Stitched BEV + detector (baseline)
-- Idea: _placeholder_
-- Pipeline: _placeholder_
-- Assumptions / limitations: _placeholder_
-- Figure: _placeholder_
+### 3.1 Camera-only Stitched BEV (baseline) (`deterministic_bev_cam.py`)
+
+In the dataset, there are multiple sources of information from sensors like cameras, LiDARs, radars, etc. In the first method, we decided to explore how good a BEV we can construct if we rely only on the cameras as input. Then, while designing the processing pipeline, we realized we have options about where to introduce the detection step: whether we construct the BEV first or detect objects first. In this first method, we explore how the algorithm performs using only the cameras and constructing the BEV first.
+
+The most direct way to get a BEV from cameras is to warp the camera images themselves onto the ground and look at them from above. We decided to take this intuitive approach that is also called inverse perspective mapping (IPM). It works by warping raw camera images and stitching them together based on each camera's orientation relative to the car. The algorithm functions by constructing the empty BEV top-down map first, and then looking up, in reverse, which camera pixel captures each spot in real-world coordinates. The color is then simply copied.
+
+As shown in image xx below, the farther the pixels are from the car, the more distorted they are because of the lack of information on depth for each pixel. Even though closer objects take up more pixels in the raw image, the constructor does not know the actual depth of each pixel, which is why they all end up uniformly stretched as if they were just air.
+
+After we have the BEV image, we ran the COCO-pretrained Faster R-CNN detector as our detector model in this project. It is a reliable model that covers enough object classes found on roads. As seen in the image, the result is not ideal. Barely any vehicles or objects are detected.
+
+Even though the image is distorted, we still plan to use this as our baseline to gain insights on why other methods outperform this approach.
+
+![Stitched BEV of one mini_val sample](figs/stitched_bev.png)
+*Stitched BEV for one sample of scene-0103. Green circles are ground-truth object centers; red is the detector's only box.*
+
 
 ### 3.2 Per-camera detection + ground projection
 - Idea: _placeholder_
