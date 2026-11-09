@@ -1,3 +1,6 @@
+import time
+start = time.perf_counter()   # time the whole script, from the first line to saving results
+
 from pathlib import Path
 import cv2
 import numpy as np
@@ -20,13 +23,21 @@ ROOT = Path(__file__).resolve().parent
 CAMERAS = set(['CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT', 'CAM_BACK', 'CAM_BACK_LEFT', 'CAM_BACK_RIGHT'])
 COCO_TO_NUSCENES = {1: "pedestrian", 2: "bicycle", 3: "car", 4: "motorcycle", 6: "bus", 8: "truck"}
 
+# documentation figures for one busy sample (the mini_val sample with the most annotated objects)
+SAVE_FIGS = True
+FIG_MIN_SCORE = 0.5   # only draw confident boxes so the figure stays readable (all boxes are still used for results)
+import matplotlib.pyplot as plt
+
 load_dotenv()
 
 class DeterministicBEV:
     def __init__(self):
         self.nusc = NuScenes(version='v1.0-mini', dataroot=str(ROOT / 'data/nuscenes'), verbose=True)
-        self.device = torch.device("cuda")
+        self.device = torch.device("cpu")
         self.model = fasterrcnn_resnet50_fpn_v2(weights=FasterRCNN_ResNet50_FPN_V2_Weights.DEFAULT).to(self.device).eval()
+        self.fig_token = None    # the sample to draw figures for (set in evaluate)
+        self.fig_images = {}     # camera name -> image with boxes drawn on it
+        self.fig_rays = []       # (camera position, LiDAR hit), ego frame, for the top-down plot
 
     # Returns a list of rays IN THE CAMERA FRAME, from pixel coordinates.
     def camera_uvs_to_rays(self, camera, input_uv, scene_record):
@@ -74,6 +85,22 @@ class DeterministicBEV:
             rays = self.camera_uvs_to_rays(cam_name, objects["centroid"], scene_record)
             ego_locations = self.rays_to_ego_depth_via_lidar(rays, scene_record, cam_name)
 
+            # documentation figure: 2D box, the centroid pixel the ray goes through, and the LiDAR distance
+            if SAVE_FIGS and token == self.fig_token:
+                for box, name, centroid, location, score in zip(objects["box"], objects["label"], objects["centroid"], ego_locations, objects["score"]):
+                    if score < FIG_MIN_SCORE:
+                        continue
+                    x1, y1, x2, y2 = [int(c) for c in box]
+                    if np.isfinite(location).all():   # LiDAR point found along the ray: green, with distance
+                        color, text = (0, 255, 0), f"{name} {np.hypot(location[0], location[1]):.1f} m"
+                        self.fig_rays.append((np.array(cs["translation"][:2]), location[:2]))
+                    else:                             # no LiDAR point within 2 deg: red, dropped
+                        color, text = (255, 0, 0), f"{name} no LiDAR hit"
+                    cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
+                    cv2.circle(img, (int(centroid[0]), int(centroid[1])), 10, (255, 255, 0), -1)
+                    cv2.putText(img, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
+                self.fig_images[cam_name] = img
+
             for name, location, score in zip(objects["label"], ego_locations, objects["score"]):
                 if not np.isfinite(location).all():
                     continue # skip detections that don't have a valid location
@@ -96,6 +123,7 @@ class DeterministicBEV:
                 sizes.setdefault(name, []).append(ann["size"])
         
         mean_size = {name: np.mean(s, axis=0).tolist() for name, s in sizes.items()}   # [w, l, h]
+        self.fig_token = max(tokens, key=lambda tok: len(self.nusc.get("sample", tok)["anns"]))
         for token in tqdm.tqdm(tokens):
             # Load relevant data from the NuScenes sample
             sample = self.nusc.get("sample", token)
@@ -111,7 +139,75 @@ class DeterministicBEV:
                 ego_box = {"center": [float(x), float(y), float(z)], "size": [w, l, h], "yaw": 0.0, "name": name, "score": float(score)}
                 results[token].append(ego_box_to_global(ego_box, t, q, token))
 
+            if SAVE_FIGS and token == self.fig_token:
+                self._save_figures(sample, detections, mean_size)
+
         return results
+
+    def _save_figures(self, sample, detections, mean_size):
+        os.makedirs(ROOT / "figs", exist_ok=True)
+
+        # figure 1: the 6 camera images (fixed order) with boxes, ray pixels (yellow) and LiDAR distances
+        order = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
+        fig, axes = plt.subplots(2, 3, figsize=(18, 7))
+        for ax, cam in zip(axes.flat, order):
+            if cam in self.fig_images:
+                ax.imshow(self.fig_images[cam])
+            ax.set_title(cam)
+            ax.axis("off")
+        plt.tight_layout()
+        plt.savefig(ROOT / "figs/lidar_bev_cameras.png", dpi=120)
+
+        # figure 2: top-down view in the ego frame (car at the origin, forward = up, left = left)
+        # plot coordinates are (-y, x) so that forward points up the page
+        plt.figure(figsize=(8, 8))
+
+        # one LiDAR sweep in the background: sensor frame -> ego frame
+        lidar_sd = self.nusc.get("sample_data", sample["data"]["LIDAR_TOP"])
+        lidar_cs = self.nusc.get("calibrated_sensor", lidar_sd["calibrated_sensor_token"])
+        pc = LidarPointCloud.from_file(os.path.join(self.nusc.dataroot, lidar_sd["filename"]))
+        pts = pc.points[:3].T @ Quaternion(lidar_cs["rotation"]).rotation_matrix.T + np.array(lidar_cs["translation"])
+        plt.scatter(-pts[:, 1], pts[:, 0], s=0.2, color="lightgray")
+
+        for cam_xy, hit_xy in self.fig_rays:   # each camera ray, from the camera to the LiDAR point it matched
+            plt.plot([-cam_xy[1], -hit_xy[1]], [cam_xy[0], hit_xy[0]], color="tab:orange", lw=0.6)
+            plt.plot(-hit_xy[1], hit_xy[0], ".", color="tab:red")
+        for name, location, score in zip(detections["labels"], detections["ego_locations"], detections["scores"]):
+            if score < FIG_MIN_SCORE:   # our predicted boxes: centered on the LiDAR point, class mean size, yaw 0
+                continue
+            w, l, h = mean_size[name]
+            plt.gca().add_patch(plt.Rectangle((-location[1] - w / 2, location[0] - l / 2), w, l, fill=False, color="tab:blue"))
+
+        t, q = ego_pose(self.nusc, sample["token"])
+        for ann_token in sample["anns"]:   # ground-truth boxes, moved from the global frame to the ego frame
+            if self.nusc.get("sample_annotation", ann_token)["num_lidar_pts"] == 0:
+                continue
+            gt = self.nusc.get_box(ann_token)
+            if category_to_detection_name(gt.name) not in COCO_TO_NUSCENES.values():
+                continue
+            gt.translate(-t)
+            gt.rotate(q.inverse)
+            corners = gt.bottom_corners()[:2]   # 2 x 4 footprint (x, y)
+            plt.plot(list(-corners[1]) + [-corners[1][0]], list(corners[0]) + [corners[0][0]], color="tab:green")
+
+        plt.plot(0, 0, "k^", markersize=10)
+        plt.plot([], [], ".", color="lightgray", label="LiDAR points (1 sweep)")
+        plt.plot([], [], color="tab:orange", label="camera ray")
+        plt.plot([], [], ".", color="tab:red", label="matched LiDAR point")
+        plt.plot([], [], color="tab:blue", label="prediction (mean size, yaw 0)")
+        plt.plot([], [], color="tab:green", label="ground truth")
+        plt.plot([], [], "k^", label="our car")
+        plt.legend(loc="upper right")
+        plt.xlim(-50, 50)
+        plt.ylim(-50, 50)
+        plt.gca().set_aspect("equal")
+        plt.xlabel("left / right (m)")
+        plt.ylabel("back / forward (m)")
+        plt.title("Camera + LiDAR, top-down (ego frame)")
+        plt.tight_layout()
+        plt.savefig(ROOT / "figs/lidar_bev_bev.png", dpi=120)
+        plt.close("all")
+        print("Saved figs/lidar_bev_cameras.png and figs/lidar_bev_bev.png")
 
     def _detect_objects(self, image):
         image = (torch.from_numpy(image).permute(2, 0, 1).float().to(self.device) / 255)    
@@ -201,6 +297,10 @@ if __name__ == "__main__":
     torch.cuda.synchronize()
 
     elapsed = time.perf_counter() - start
+
+    elapsed = time.perf_counter() - start
+    save_timing(elapsed, len(results), "cpu", str(ROOT / "outputs/lidar_bev/timing.json"))
+    print(f"Runtime: {elapsed:.1f} s total, {elapsed / len(results):.2f} s/sample")
 
     path = str(ROOT / "outputs/lidar_bev/results.json")
     save_results(results, path)

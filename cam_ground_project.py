@@ -46,6 +46,17 @@ MERGE_DIST = 2.0
 # ========== PROCESSING ==========
 results = {}
 tokens = val_sample_tokens(nusc)
+
+# ========== FIGURES FOR DOCUMENTATION ==========
+# draw the method's steps for one busy sample: the mini_val sample with the most annotated objects
+SAVE_FIGS = True
+FIG_MIN_SCORE = 0.5   # only draw confident boxes so the figure stays readable (all boxes are still used for results)
+import os
+import matplotlib.pyplot as plt
+fig_token = max(tokens, key=lambda tok: len(nusc.get("sample", tok)["anns"]))
+fig_images = []   # (camera name, image with boxes drawn on it)
+fig_rays = []     # (camera position, ground contact point), ego frame, for the top-down plot
+
 for i, token in enumerate(tokens):
     sample = nusc.get("sample", token)
     ego_boxes = []   # every box from all 6 cameras, in the ego frame
@@ -93,6 +104,18 @@ for i, token in enumerate(tokens):
             ego_boxes.append({"center": [center_xy[0], center_xy[1], h / 2], "size": [w, l, h],
                               "yaw": 0.0, "name": name, "score": score})
 
+            # documentation figure: 2D box, ground contact pixel, and estimated distance from the car
+            if SAVE_FIGS and token == fig_token and score >= FIG_MIN_SCORE:
+                dist = np.hypot(center_xy[0], center_xy[1])
+                cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 3)
+                cv2.circle(img, (int(u), int(v)), 10, (255, 0, 0), -1)
+                cv2.putText(img, f"{name} {dist:.1f} m", (int(x1), int(y1) - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
+                fig_rays.append((cam_pos[:2], ground[:2]))
+
+        if SAVE_FIGS and token == fig_token:
+            fig_images.append((cam_name, img))
+
     # merge duplicates across cameras: highest score first, drop any later box of the same class nearby
     ego_boxes.sort(key=lambda b: b["score"], reverse=True)
     kept = []
@@ -109,6 +132,58 @@ for i, token in enumerate(tokens):
     # package into correct format for benchmarking
     t, q = ego_pose(nusc, token)
     results[token] = [ego_box_to_global(b, t, q, token) for b in kept]
+
+    if SAVE_FIGS and token == fig_token:
+        os.makedirs("figs", exist_ok=True)
+
+        # figure 1: the 6 camera images with boxes, contact points (red) and distances
+        fig, axes = plt.subplots(2, 3, figsize=(18, 7))
+        for ax, (cam, im) in zip(axes.flat, fig_images):
+            ax.imshow(im)
+            ax.set_title(cam)
+            ax.axis("off")
+        plt.tight_layout()
+        plt.savefig("figs/ground_project_cameras.png", dpi=120)
+
+        # figure 2: top-down view in the ego frame (car at the origin, forward = up, left = left)
+        # plot coordinates are (-y, x) so that forward points up the page
+        plt.figure(figsize=(8, 8))
+        for cam_xy, ground_xy in fig_rays:   # each ray on the ground, from the camera to the contact point
+            plt.plot([-cam_xy[1], -ground_xy[1]], [cam_xy[0], ground_xy[0]], color="lightgray", lw=0.8)
+            plt.plot(-ground_xy[1], ground_xy[0], ".", color="tab:red")
+        for b in kept:   # our predicted boxes: class mean size, yaw 0
+            if b["score"] < FIG_MIN_SCORE:
+                continue
+            w, l, h = b["size"]
+            cx, cy = b["center"][0], b["center"][1]
+            plt.gca().add_patch(plt.Rectangle((-cy - w / 2, cx - l / 2), w, l, fill=False, color="tab:blue"))
+        for ann_token in sample["anns"]:   # ground-truth boxes, moved from the global frame to the ego frame
+            if nusc.get("sample_annotation", ann_token)["num_lidar_pts"] == 0:
+                continue
+            gt = nusc.get_box(ann_token)
+            if category_to_detection_name(gt.name) not in COCO_TO_NUSCENES.values():
+                continue
+            gt.translate(-t)
+            gt.rotate(q.inverse)
+            corners = gt.bottom_corners()[:2]   # 2 x 4 footprint (x, y)
+            plt.plot(list(-corners[1]) + [-corners[1][0]], list(corners[0]) + [corners[0][0]], color="tab:green")
+        plt.plot(0, 0, "k^", markersize=10)
+        plt.plot([], [], color="lightgray", label="camera ray")
+        plt.plot([], [], ".", color="tab:red", label="ground contact point")
+        plt.plot([], [], color="tab:blue", label="prediction (mean size, yaw 0)")
+        plt.plot([], [], color="tab:green", label="ground truth")
+        plt.plot([], [], "k^", label="our car")
+        plt.legend(loc="upper right")
+        plt.xlim(-50, 50)
+        plt.ylim(-50, 50)
+        plt.gca().set_aspect("equal")
+        plt.xlabel("left / right (m)")
+        plt.ylabel("back / forward (m)")
+        plt.title("Ground projection, top-down (ego frame)")
+        plt.tight_layout()
+        plt.savefig("figs/ground_project_bev.png", dpi=120)
+        plt.close("all")
+        print("Saved figs/ground_project_cameras.png and figs/ground_project_bev.png")
 
     print(f"{i + 1}/{len(tokens)}: {len(results[token])} boxes ({len(ego_boxes)} before merging)", flush=True)
 

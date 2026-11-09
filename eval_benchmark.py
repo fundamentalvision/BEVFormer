@@ -145,10 +145,64 @@ if __name__ == "__main__":
     save_results(results, path)
     evaluate(nusc, "ground_truth", path)
 
+    scores = {}   # method name -> {"mAP", "mATE", "sec_per_sample"}, used for the bar graphs
+
     # ========== CAM-B: DETECTOR ON THE BEV IMAGE (null baseline) ==========
     # results come from running deterministic_bev_cam.py
-    evaluate(nusc, "cam_bev_detect", "outputs/cam_bev_detect/results.json")
+    scores["cam_bev_detect"] = evaluate(nusc, "cam_bev_detect", "outputs/cam_bev_detect/results.json")
 
     # ========== CAM-G: DETECTOR ON EACH CAMERA, PROJECTED TO THE GROUND ==========
     # results come from running cam_ground_project.py
-    evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
+    scores["cam_ground_project"] = evaluate(nusc, "cam_ground_project", "outputs/cam_ground_project/results.json")
+
+    # ========== LIDAR: CAMERA DETECTIONS + LIDAR DEPTH (Isaiah) ==========
+    # results come from running deterministic_bev_lidar.py
+    scores["lidar_bev"] = evaluate(nusc, "lidar_bev", "outputs/lidar_bev/results.json")
+
+    # ========== BEVFORMER TINY FP32 (learned, camera only) ==========
+    # results come from running run_bev_fp32.py (GPU, Isaiah's machine)
+    scores["bevformer_tiny"] = evaluate(nusc, "bevformer_tiny", "outputs/bevformer_tiny/pts_bbox/results_nusc.json")
+
+    # ========== BEVFORMER TINY FP16 (learned, camera only, half precision) ==========
+    # results come from running run_bev_fp16.py (GPU, Isaiah's machine)
+    scores["bevformer_tiny_fp16"] = evaluate(nusc, "bevformer_tiny_fp16", "outputs/bevformer_tiny_fp16/pts_bbox/results_nusc.json")
+
+    # ========== BEVDET R50 (learned, camera only) ==========
+    # results come from running run_bevdet_r50.py (GPU, Isaiah's machine)
+    scores["bevdet-r50"] = evaluate(nusc, "bevdet-r50", "outputs/bevdet-r50/pts_bbox/results_nusc.json")
+
+    # ========== BAR GRAPHS: ONE FIGURE PER METRIC ==========
+    import matplotlib.pyplot as plt
+    names = list(scores.keys())
+
+    # the learned models have no timing.json (they ran on Isaiah's GPU without a timer), so the runtime chart
+    # uses PUBLISHED speeds for them instead, drawn hatched and labelled "reported".
+    # these are GPU inference only (RTX 3090), NOT comparable to our whole-script CPU times:
+    #   BEVDet R50: 30.7 FPS, official BEVDet repo (PyTorch, no postprocessing)
+    #   BEVFormer tiny FP32 / FP16: 37.9 / 69.2 FPS, unofficial TensorRT port (gitee: superpig2021/BEVFormer_tensorrt)
+    reported = {"bevformer_tiny": 1 / 37.9, "bevformer_tiny_fp16": 1 / 69.2, "bevdet-r50": 1 / 30.7}
+    for n in list(reported):
+        if scores[n]["sec_per_sample"] is None:
+            scores[n]["sec_per_sample"] = reported[n]
+        else:
+            del reported[n]   # a real measurement exists, use it
+    metrics = [("mAP", "mAP: mean Average Precision (higher is better)"),
+               ("mATE", "mATE: mean Average Translation Error, in m (lower is better)"),
+               ("sec_per_sample", "runtime in s/sample (lower is better)")]
+    for key, title in metrics:
+        values = [scores[n][key] if scores[n][key] is not None else 0 for n in names]   # 0 = no timing.json yet
+        plt.figure(figsize=(10, 4))
+        bars = plt.bar(names, values, color=["tab:gray", "tab:blue", "tab:orange", "tab:green", "tab:olive", "tab:purple"])
+        for bar, n in zip(bars, names):
+            label = "no timing" if scores[n][key] is None else f"{scores[n][key]:.3f}"
+            if key == "sec_per_sample" and n in reported:
+                bar.set_hatch("//")
+                label += "\n(reported, GPU)"
+            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), label, ha="center", va="bottom")
+        if key == "sec_per_sample":
+            plt.yscale("log")   # GPU (~0.03 s) and CPU (~14 s) differ by ~500x
+            title += "\nsolid = measured whole script on CPU, hatched = published GPU inference only (not comparable)"
+        plt.title(title)
+        plt.tight_layout()
+        plt.savefig(f"figs/benchmark_{key}.png", dpi=120)
+    plt.show()
