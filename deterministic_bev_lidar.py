@@ -13,6 +13,7 @@ from shapely import points
 import torch
 import os
 import tqdm
+import time
 from dotenv import load_dotenv
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights
 from eval_benchmark import val_sample_tokens, ego_pose, ego_box_to_global, save_results, save_timing
@@ -289,8 +290,13 @@ class DeterministicBEV:
         return ego_points
 
 if __name__ == "__main__":
+    start = time.perf_counter()
+
     bev = DeterministicBEV()
     results = bev.evaluate()
+    torch.cuda.synchronize()
+
+    elapsed = time.perf_counter() - start
 
     elapsed = time.perf_counter() - start
     save_timing(elapsed, len(results), "cpu", str(ROOT / "outputs/lidar_bev/timing.json"))
@@ -298,4 +304,5 @@ if __name__ == "__main__":
 
     path = str(ROOT / "outputs/lidar_bev/results.json")
     save_results(results, path)
+    save_timing(elapsed, len(results), "GPU detector + CPU geometry", str(ROOT / "outputs/lidar_bev/timing.json"))
     evaluate_results(bev.nusc, "lidar_bev", path)

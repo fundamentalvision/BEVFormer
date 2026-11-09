@@ -1,14 +1,14 @@
 # Evaluate Bevformer_FP16
 from pathlib import Path
 import sys
-
+import time
 import torch
 from mmcv import Config
 from mmcv.parallel import MMDataParallel
 from mmdet3d.datasets import build_dataset, build_dataloader
 from mmdet3d.models import build_model
 from nuscenes.nuscenes import NuScenes
-from eval_benchmark import evaluate
+from eval_benchmark import evaluate, save_timing
 
 ROOT = Path(__file__).resolve().parent
 
@@ -38,12 +38,18 @@ def main():
 
     # Keep frames in order so BEVFormer can carry its BEV history across time.
     predictions = []
+    torch.cuda.synchronize()
+    start = time.perf_counter()
     with torch.no_grad():
         for data in loader:
             predictions.extend(model(return_loss=False, rescale=True, **data))
 
+    torch.cuda.synchronize()
+    elapsed = time.perf_counter() - start
+
     # Export global-coordinate detections and use the shared six-class evaluator.
     result_files, _ = dataset.format_results(predictions, jsonfile_prefix=str(ROOT / 'outputs/bevdet-r50'))
+    save_timing(elapsed, len(dataset), "GPU", str(Path(result_files["pts_bbox"]).parent / "timing.json"))
     nusc = NuScenes(version='v1.0-mini', dataroot=str(ROOT / 'data/nuscenes'), verbose=False,)
     evaluate(nusc, 'bevdet-r50', result_files['pts_bbox'])
 
