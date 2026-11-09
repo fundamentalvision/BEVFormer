@@ -159,6 +159,18 @@ if __name__ == "__main__":
     # results come from running deterministic_bev_lidar.py
     scores["lidar_bev"] = evaluate(nusc, "lidar_bev", "outputs/lidar_bev/results.json")
 
+    # ========== BEVFORMER TINY FP32 (learned, camera only) ==========
+    # results come from running run_bev_fp32.py (GPU, Isaiah's machine)
+    scores["bevformer_tiny"] = evaluate(nusc, "bevformer_tiny", "outputs/bevformer_tiny/pts_bbox/results_nusc.json")
+
+    # ========== BEVFORMER TINY FP16 (learned, camera only, half precision) ==========
+    # results come from running run_bev_fp16.py (GPU, Isaiah's machine)
+    scores["bevformer_tiny_fp16"] = evaluate(nusc, "bevformer_tiny_fp16", "outputs/bevformer_tiny_fp16/pts_bbox/results_nusc.json")
+
+    # ========== BEVDET R50 (learned, camera only) ==========
+    # results come from running run_bevdet_r50.py (GPU, Isaiah's machine)
+    scores["bevdet-r50"] = evaluate(nusc, "bevdet-r50", "outputs/bevdet-r50/pts_bbox/results_nusc.json")
+
     # ========== BAR GRAPHS: ONE FIGURE PER METRIC ==========
     import matplotlib.pyplot as plt
     names = list(scores.keys())
@@ -167,8 +179,8 @@ if __name__ == "__main__":
                ("sec_per_sample", "runtime in s/sample (lower is better)")]
     for key, title in metrics:
         values = [scores[n][key] if scores[n][key] is not None else 0 for n in names]   # 0 = no timing.json yet
-        plt.figure(figsize=(6, 4))
-        bars = plt.bar(names, values, color=["tab:gray", "tab:blue", "tab:orange"])
+        plt.figure(figsize=(10, 4))
+        bars = plt.bar(names, values, color=["tab:gray", "tab:blue", "tab:orange", "tab:green", "tab:olive", "tab:purple"])
         for bar, n in zip(bars, names):
             label = "no timing" if scores[n][key] is None else f"{scores[n][key]:.3f}"
             plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), label, ha="center", va="bottom")
