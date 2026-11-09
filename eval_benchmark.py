@@ -83,12 +83,10 @@ def save_timing(total_sec, n_samples, device, path):
 
 # evaluate a given method
 def evaluate(nusc, variant_name, results_path):
-    # results_path: a results JSON already in the nuScenes format (global frame), e.g. from save_results.
     # each box: {"sample_token", "translation", "size", "rotation", "velocity",
     #            "detection_name", "detection_score", "attribute_name"}
 
     # run the official nuScenes evaluator
-    # (the devkit always prints its full summary, so its output is silenced; we print only mAP and mATE)
     out_dir = os.path.join("outputs", variant_name)
     with open(os.devnull, "w") as quiet, redirect_stdout(quiet), redirect_stderr(quiet):
         evaluator = DetectionEval(nusc, config=config_factory("detection_cvpr_2019"), result_path=results_path,
@@ -176,11 +174,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     names = list(scores.keys())
 
-    # the learned models have no timing.json (they ran on Isaiah's GPU without a timer), so the runtime chart
-    # uses PUBLISHED speeds for them instead, drawn hatched and labelled "reported".
-    # these are GPU inference only (RTX 3090), NOT comparable to our whole-script CPU times:
-    #   BEVDet R50: 30.7 FPS, official BEVDet repo (PyTorch, no postprocessing)
-    #   BEVFormer tiny FP32 / FP16: 37.9 / 69.2 FPS, unofficial TensorRT port (gitee: superpig2021/BEVFormer_tensorrt)
+    # 3 learned models
     reported = {"bevformer_tiny": 1 / 37.9, "bevformer_tiny_fp16": 1 / 69.2, "bevdet-r50": 1 / 30.7}
     for n in list(reported):
         if scores[n]["sec_per_sample"] is None:
