@@ -109,30 +109,54 @@ This shows the core limitation of using a camera alone. A single image has no de
 - Pipeline: _placeholder_
 - Assumptions / limitations: _placeholder_
 
-## 4. Results
-- Main table: mAP, mATE, runtime, device for all 6 methods.
-- Per-class AP table (0.5 / 1 / 2 / 4 m).
-- Optional figure: BEV predictions vs ground truth.
+## 4. Evaluation Metrics
 
-## 5. Discussion
-- Why the stitched BEV fails (IPM smears tall objects).
-- Ground projection: detection works, depth is the bottleneck (flat-ground triangle, error grows with distance).
-- Accuracy vs compute (6 detector passes vs 1).
-- Camera vs LiDAR: measured vs inferred distance.
-- Deterministic vs learned.
+To compare all six methods fairly, we score them with the official nuScenes detection evaluator on the same 81 samples. For every method script, we report three metrics:
+
+- **mAP (mean Average Precision):** how well the method detects the right class. It counts a hit if the center is within certain tolerance of a real object. The higher the better.
+- **mATE (mean Average Translation Error):** for the objects found, how far off the center is, in metres. Lower is better.
+- **Runtime:** seconds per sample to run the whole script (CPU for the deterministic methods, GPU for the learned models).
+
+We only score the 6 classes that our COCO detector can produce: car, truck, bus, pedestrian, bicycle and motorcycle. We also only report mAP and mATE out of the evaluator's metrics, because those depend only on an object's class, ground position and score, which every method actually predicts. 
+
+These benchmarks are stored in the evaluation script (`eval_benchmark.py`). The benchmark does not run the methods itself. Each method's script saves its predictions to `outputs/<method>/results.json` in the nuScenes results format. Each script also saves a `timing.json` with its runtime wherever applicable.
+
+## 5. Results and Discussion
+
+**Detection (mAP).** As shown in the image below, the stitched BEV baseline scores 0 on mAP. The detector finds almost nothing in the smeared top-down image, which confirms that warping whole images onto the ground destroys the objects we want to find. The second method, which is detecting first and projecting, raises mAP to 0.108, even though it uses the exact same detector. This directly shows that the order of the steps matters more than the model. Finally, replacing the flat-ground guess with a measured LiDAR distance in method 3 more than doubles mAP again to 0.261. 
+
+The three learned models score highest, around 0.37 to 0.38, using cameras only. The FP16 version of BEVFormer loses almost no accuracy compared to FP32 (0.381 vs 0.382).
+
+![mAP for all six methods](figs/benchmark_mAP.png)
+
+**Position error (mATE).** The baseline's 1.000 is not a real error. It matched no objects, so nuScenes reports 1.0 as a placeholder. For method 2, ground projection is off by about 1 m on average, mostly from far objects whose distance blows up near the horizon. In method 3, LiDAR improves this to 0.92 m. It is very accurate for thin objects like pedestrians, but for cars, trucks and buses the LiDAR point lands on the side of the object facing us rather than its center, which leaves an error of more than 1 m. 
+
+The learned models place objects best, with BEVDet the most precise at 0.73 m.
+
+![mATE for all six methods](figs/benchmark_mATE.png)
+
+**Runtime.** Among our deterministic methods, the baseline is the fastest (2.4 s per sample) because it runs the detector once on the stitched image, while ground projection and LiDAR run it six times, once per camera (about 13.6 to 13.9 s per sample). Adding LiDAR costs almost no extra time over ground projection, so its accuracy gain comes nearly for free. These three deterministic methods are run on CPUs.
+
+On the other hand, the learned models run in 0.3 to 0.4 s per sample, but on a GPU, so most of that gap comes from the hardware rather than the method. FP16 is about 20% faster than FP32 with almost no loss in accuracy.
+
+![Runtime per sample for all six methods](figs/benchmark_sec_per_sample.png)
+
+**Conclusion.** The results follow how each method gets an object's distance. The baseline has no distance at all and fails, ground projection guesses it from a flat-ground assumption, LiDAR measures it, and the learned models learn depth cues from a large amount of driving data. 
+
+With a camera alone, a hand-built pipeline has to assume something about the world to recover depth, and it cannot tell when that assumption is wrong. Adding a depth sensor like LiDAR closes much of that gap cheaply, but the learned models still do best on both detection and position, even without LiDAR, while also predicting size, heading and velocity, which our deterministic methods do not estimate.
 
 ## 6. Limitations
-- Small eval set (81 samples).
-- No yaw / size / velocity estimation in the deterministic methods.
-- CPU vs GPU timing not directly comparable.
-- Generic COCO detector, not trained on driving data.
 
-## 7. Future work
-- Camera + radar late fusion.
-- Tracking across frames.
-- Combining depth cues (ground contact + known size).
+There are a number of limitations to the results from this project. 
 
-## 8. Conclusion
+First of all, our evaluation set is small. We score on only 81 samples from 2 scenes, so a few good or bad frames can move the scores noticeably, and small differences, such as between BEVFormer FP32 and FP16, should not be over-read.
 
-## References
-- nuScenes, Faster R-CNN, BEVFormer, BEVDet.
+Our deterministic methods also only estimate where an object is and what it is. They do not predict its real size, heading or speed, and instead fill these in with the class average size, a heading of 0 and zero velocity. This is why we only compare mAP and mATE, and it means the learned models can do more than our scores show. More detailed comparisons and analysis often require more than just a single source of camera as the input.
+
+The runtimes are not directly comparable either. Our methods ran on a laptop CPU while the learned models ran on a GPU, so most of the speed gap comes from the hardware rather than the methods themselves. For the purpose of this project, CPU was used to run some of the methods due to simplicity. However in practical use, for best performance and fast reaction time on the road, advanced computing techniques like GPU should be used.
+
+Finally, all three deterministic methods rely on a generic detector. Faster R-CNN was trained on everyday photos (COCO), not driving data, and only covers 6 of the nuScenes classes. We decided to use this single model for controlled comparison reasons. Our methods also treat each sample on its own and do not track objects from frame to frame, which could help with hidden objects and with estimating speed.
+
+## Contributions
+
+The work was split equally between the two authors of this work. AI is used partially only for the purpose of formatting on the program, documentations, research of models and datasets. 
