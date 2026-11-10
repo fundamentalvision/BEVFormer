@@ -90,25 +90,38 @@ As seen in the images, this approach works well for nearby objects. Although no 
 This shows the core limitation of using a camera alone. A single image has no depth, so the method has to assume something about the world to get a distance, and it cannot tell when that assumption is wrong.
 
 ### 3.3 Camera rays + LiDAR
-- Idea: _placeholder_
-- Pipeline: _placeholder_
-- Assumptions / limitations: _placeholder_
-- Figure: _placeholder_
+The LiDAR model begins by capturing each frame from every camera view. Through each perspective, the COCO-pretrained Faster R-CNN model is run, resulting in bounding boxes for every detected object. These bounding boxes can then be converted from UV coordinates in the camera image space to a pointing vector relative to the camera (this is done using the mapping methods provided by the nuscenes python library).
+
+We plumb these pointing vectors into a point cloud collected from the past 10 samples of lidar data. This collection and amalgamation function is also provided by the nuScenes dataset and automatically maps the LiDAR points to the active camera's frame. For each ray, we compare its heading with the LiDAR points' headings. We select the LiDAR points most aligned with our ray's heading and return that point's depth to the camera. A good example of our unit testing is in the first two lines of this process, where we check that our points list is not irregular.
+```
+points = points[np.isfinite(points).all(axis=1)]
+points = points[np.linalg.norm(points, axis=1) > 1e-6]
+```
+Once depths are obtained, we map these camera-relative depths and direction vectors to the world-coordinate points of our detected objects. We then draw bounding boxes based on the average bounds in the nuScenes training data, and expose the resulting bounding boxes for evaluation.
+#### Limitations
+This model has no way to approximate each object's heading, which results in high error. Additionally, without temporal attention, information gained over time, such as object velocity, is lost. Finally, when tracking objects, the model can recognize an object multiple times across different perspectives, which could result in multiple independent bounding boxes being placed on top of eachother.
 
 ### 3.4 BEVFormer tiny (FP32)
-- Idea: _placeholder_
-- Pipeline: _placeholder_
-- Assumptions / limitations: _placeholder_
+BEVFormer Tiny is a transformer-based model that extracts features from multi-view camera inputs and projects them into a 3D BEV grid containing semantic information (effectively acting as a voxel representation of the world around the vehicle). BEVFormer utilizes Spatial Cross-Attention (SCA) to query and fuse features seamlessly across varying camera perspectives, and Temporal Self-Attention (TSA) to track scene movement across historical frames.
+#### Limitations
+ - Due to BEVFormer's transformer nature, the model is very heavy and compute-intensive. It is very difficult to run this model on any lightweight hardware
+ - Because BEVFormer is so reliant on depth estimation across cameras, it relies heavily on accurately calibrated camera feeds. Pixel-level misalignment can drastically damage a model's accuracy and ability to estimate depth.
+ - Due to BEVFormer's camera-exclusive nature, its depth estimation can be unreliable, especially as an object gets farther away.
 
 ### 3.5 BEVFormer tiny (FP16)
-- Idea: _placeholder_
-- Difference from FP32: _placeholder_
+BEVFormer Tiny FP16 is the same model as BEVFormer Tiny FP32, but uses 16-bit floating-point numbers for its model weight storage. This rougly halves the storage needed to unpack the model, and can significantly speed up inference on machines with tensor cores.
+
+#### Limitations
+ - Reduced numeric accuracy can result in model breakdown or performance loss.
 
 ### 3.6 BEVDet R50
-- Idea: _placeholder_
-- Pipeline: _placeholder_
-- Assumptions / limitations: _placeholder_
+BEVDepth R50 approaches depth differently than BEVFormer; BEVDepth processes each image individually by passing it through ResNet50 to extract detailed features. BEVDepth then uses a second network head to iterate through every pixel of the image and estimate a metric depth from the camera. Once this depth map is generated, the model projects each pixel onto a point cloud. These points are compressed into a 2D field using a method known as splatting, and a detection head runs on the resulting field to separate and label objects.
 
+Notably, BEVDepth R50 uses LiDAR data through training to build its depth estimation network, but during inference it needs no LiDAR ground truth.
+#### Limitations
+ - BEVDepth relies on accurate initial estimation of depth, so the model accuracy really depends on how robust the depth netork head's training regime was.
+ - BEVDepth is especially sensitive to visual noise & disruption. Heavy rain or sensor washout from reflected sun can cripple perception
+ - The splatting step for 2D compression prevents the need of complex 3D attention heads and object detectors, but requires a compute-intensive compression algorithm which can take longer to execute than traditional 3D detection.
 ## 4. Evaluation Metrics
 
 To compare all six methods fairly, we score them with the official nuScenes detection evaluator on the same 81 samples. For every method script, we report three metrics:
